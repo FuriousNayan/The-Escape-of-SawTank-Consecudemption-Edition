@@ -315,6 +315,8 @@
     drawCharacters();
     drawWallsAndExit();
     drawPlayer();
+
+    ctx.restore();
   }
 
   function drawFloor() {
