@@ -217,12 +217,6 @@
   function updateAnimation(dt) {
     if (!tankLoaded) return;
 
-    if (!player.isMoving) {
-      player.frame = 0;
-      player.frameTimer = 0;
-      return;
-    }
-
     player.frameTimer += dt;
     if (player.frameTimer >= PLAYER_ANIM_FRAME_DURATION) {
       player.frameTimer -= PLAYER_ANIM_FRAME_DURATION;
@@ -308,9 +302,20 @@
 
     ctx.save();
     ctx.translate(player.x, player.y);
-    // Top of the sprite is forward.
+    // Top of the sprite is forward; pivot is biased slightly toward the back of the tank body.
     ctx.rotate(player.angle);
-    ctx.drawImage(tankImage, sx, sy, frameWidth, frameHeight, -dw / 2, -dh / 2, dw, dh);
+    const pivotYOffset = dh * 0.15; // move pivot a little down from the exact center
+    ctx.drawImage(
+      tankImage,
+      sx,
+      sy,
+      frameWidth,
+      frameHeight,
+      -dw / 2,
+      -dh / 2 + pivotYOffset,
+      dw,
+      dh
+    );
     ctx.restore();
   }
 
