@@ -4,25 +4,14 @@
 
   if (!ctx) return;
 
+  // Make sure we are not in "pixel-perfect" mode; allow smooth scaling.
   ctx.imageSmoothingEnabled = true;
-
-  function resizeCanvas() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    canvas.width = w;
-    canvas.height = h;
-  }
-
-  resizeCanvas();
-  window.addEventListener("resize", resizeCanvas);
 
   // --- Config ----------------------------------------------------------------
 
   const ROOM_COLS = 20;
   const ROOM_ROWS = 11;
   const TILE_SIZE = 48; // logical tiles, but movement is fully analog
-  const LOGICAL_WIDTH = ROOM_COLS * TILE_SIZE;
-  const LOGICAL_HEIGHT = ROOM_ROWS * TILE_SIZE;
 
   const PLAYER_SPEED = 130; // pixels / second (slower scene pacing)
   const PLAYER_ROTATE_SPEED = Math.PI * 1.4; // radians / second
@@ -30,50 +19,37 @@
   // --- Assets ----------------------------------------------------------------
 
   const floorImage = new Image();
-  floorImage.src = "images/grass.png";
+  floorImage.src = "grass.png";
 
   const tankImage = new Image();
-  tankImage.src = "images/SawTank-Sheet-export.png";
+  tankImage.src = "SawTank-Sheet-export.png";
+
+  const bigPhillyImage = new Image();
+  bigPhillyImage.src = "bigphilly.png";
+
+  const barsImage = new Image();
+  barsImage.src = "bars.png";
 
   let floorLoaded = false;
   let tankLoaded = false;
+  let bigPhillyLoaded = false;
+  let barsLoaded = false;
 
-  floorImage.onload = () => { floorLoaded = true; };
-  tankImage.onload = () => { tankLoaded = true; };
+  floorImage.onload = () => {
+    floorLoaded = true;
+  };
 
-  // --- Characters ------------------------------------------------------------
-  // Each character has its own attributes. Add new entries to the array to introduce NPCs.
-  // Schema: { id, spriteSrc, tileX, tileY, maxWidthTiles?, maxHeightTiles?, solid?, layer?, ... }
-  const characterImages = {}; // id -> Image (populated when loaded)
+  tankImage.onload = () => {
+    tankLoaded = true;
+  };
 
-  const characters = [
-    {
-      id: "bigPhilly",
-      spriteSrc: "images/bigphilly.png",
-      tileX: 1.8,
-      tileY: 1.8,
-      maxWidthTiles: 1.2,
-      maxHeightTiles: 1.2,
-      solid: false,
-      layer: 0,
-    },
-    {
-      id: "boohbahThug",
-      spriteSrc: "images/boohbahThug.png",
-      tileX: 3.5,
-      tileY: 1.8,
-      maxWidthTiles: 1.2,
-      maxHeightTiles: 1.2,
-      solid: false,
-      layer: 0,
-    },
-  ];
+  bigPhillyImage.onload = () => {
+    bigPhillyLoaded = true;
+  };
 
-  characters.forEach((ch) => {
-    const img = new Image();
-    img.src = ch.spriteSrc;
-    img.onload = () => { characterImages[ch.id] = img; };
-  });
+  barsImage.onload = () => {
+    barsLoaded = true;
+  };
 
   // --- Room Layout -----------------------------------------------------------
   // 0 = floor, 1 = wall, 2 = exit door
@@ -85,6 +61,7 @@
   };
 
   const EXIT_TILE_POS = { x: 18, y: 1 };
+  const BIG_PHILLY_POS = { x: 1.8, y: 1.8 };
 
   const room = Array.from({ length: ROOM_ROWS }, (_, y) =>
     Array.from({ length: ROOM_COLS }, (_, x) => {
@@ -306,17 +283,32 @@
   // --- Rendering -------------------------------------------------------------
 
   function render() {
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.scale(canvas.width / LOGICAL_WIDTH, canvas.height / LOGICAL_HEIGHT);
 
     drawFloor();
-    drawCharacters();
+    drawTrailMarks(lastTime);
+    drawBigPhilly();
     drawWallsAndExit();
     drawPlayer();
+  }
 
-    ctx.restore();
+  function drawTrailMarks(now) {
+    const markW = 14;
+    const markH = 6;
+
+    for (const m of trailMarks) {
+      const age = (now - m.t) / 1000;
+      const life = 1 - age / TRAIL_MARK_LIFETIME;
+      if (life <= 0) continue;
+
+      ctx.save();
+      ctx.translate(m.x, m.y);
+      ctx.rotate(m.angle);
+      ctx.globalAlpha = life * 0.5;
+      ctx.fillStyle = "#0a0f0a";
+      ctx.fillRect(-markW / 2, -markH / 2, markW, markH);
+      ctx.restore();
+    }
   }
 
   function drawFloor() {
@@ -382,22 +374,25 @@
     }
   }
 
-  function drawCharacters() {
-    const byLayer = [...characters].sort((a, b) => (a.layer ?? 0) - (b.layer ?? 0));
-    for (const ch of byLayer) {
-      const img = characterImages[ch.id];
-      if (!img) continue;
+  function drawBigPhilly() {
+    if (!bigPhillyLoaded) return;
 
-      const maxW = (ch.maxWidthTiles ?? 1) * TILE_SIZE;
-      const maxH = (ch.maxHeightTiles ?? 1) * TILE_SIZE;
-      const scale = Math.min(maxW / img.width, maxH / img.height);
-      const drawW = img.width * scale;
-      const drawH = img.height * scale;
-      const px = (ch.tileX ?? 0) * TILE_SIZE - drawW / 2;
-      const py = (ch.tileY ?? 0) * TILE_SIZE - drawH / 2;
+    const maxWidth = TILE_SIZE * 1.2;
+    const maxHeight = TILE_SIZE * 1.2;
+    const scale = Math.min(
+      maxWidth / bigPhillyImage.width,
+      maxHeight / bigPhillyImage.height
+    );
+    const drawWidth = bigPhillyImage.width * scale;
+    const drawHeight = bigPhillyImage.height * scale;
 
-      ctx.drawImage(img, px, py, drawW, drawH);
-    }
+    ctx.drawImage(
+      bigPhillyImage,
+      BIG_PHILLY_POS.x * TILE_SIZE - drawWidth / 2,
+      BIG_PHILLY_POS.y * TILE_SIZE - drawHeight / 2,
+      drawWidth,
+      drawHeight
+    );
   }
 
   function drawPlayer() {
