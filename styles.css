@@ -9,29 +9,34 @@
 html,
 body {
   height: 100%;
+  overflow: hidden;
 }
 
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: radial-gradient(circle at top, #1b1f3a 0, #050611 55%, #020308 100%);
+  background: #020308;
   color: #f5f5f5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .page {
-  width: 100%;
-  max-width: 1120px;
-  padding: 16px 20px 24px;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
 }
 
 .hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 12px;
+  padding: 12px 16px;
   color: #e4ecff;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
+  pointer-events: none;
+  z-index: 10;
 }
 
 .hud-title {
@@ -53,20 +58,15 @@ body {
 }
 
 .game-shell {
-  background: radial-gradient(circle at top left, #14182f, #040612 65%);
-  border-radius: 18px;
-  padding: 16px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  display: block;
 }
 
 canvas#gameCanvas {
   display: block;
-  border-radius: 12px;
+  width: 100vw;
+  height: 100vh;
   background: #102414;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
 }
 
