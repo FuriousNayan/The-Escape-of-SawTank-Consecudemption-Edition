@@ -3,12 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Top-Down Grid Skeleton</title>
+    <title>SawTank: Prison Break</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <canvas id="gameCanvas"></canvas>
+    <div class="page">
+      <header class="hud">
+        <div class="hud-title">SawTank: Prison Break</div>
+        <div class="hud-subtitle">Top-down room escape</div>
+        <div class="hud-status" id="statusText">Find the exit.</div>
+      </header>
+      <main class="game-shell">
+        <canvas id="gameCanvas" width="960" height="540"></canvas>
+      </main>
+    </div>
+
     <script src="game.js"></script>
   </body>
-</html>
+  </html>
 

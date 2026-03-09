@@ -2,98 +2,86 @@
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
 
-  if (!ctx) {
-    // Canvas not supported; fail silently in this minimal skeleton.
-    return;
-  }
+  if (!ctx) return;
+
+  // Make sure we are not in "pixel-perfect" mode; allow smooth scaling.
+  ctx.imageSmoothingEnabled = true;
 
   // --- Config ----------------------------------------------------------------
 
-  const MAP_COLS = 20;
-  const MAP_ROWS = 15;
-  const TILE_SIZE = 32;
-  const PLAYER_SIZE = TILE_SIZE - 8;
-  const PLAYER_SPEED = 5 * TILE_SIZE; // pixels per second (in tiles/sec * TILE_SIZE)
+  const ROOM_COLS = 20;
+  const ROOM_ROWS = 11;
+  const TILE_SIZE = 48; // logical tiles, but movement is fully analog
 
-  // Set the internal canvas resolution based on the logical grid.
-  canvas.width = MAP_COLS * TILE_SIZE;
-  canvas.height = MAP_ROWS * TILE_SIZE;
+  const PLAYER_SPEED = 210; // pixels / second
+  const PLAYER_ROTATE_SPEED = Math.PI * 1.4; // radians / second
 
-  // Tile types
-  const TILE = {
+  // --- Assets ----------------------------------------------------------------
+
+  const floorImage = new Image();
+  floorImage.src = "grass.png";
+
+  const tankImage = new Image();
+  tankImage.src = "SawTank-Sheet-export.png";
+
+  let floorLoaded = false;
+  let tankLoaded = false;
+
+  floorImage.onload = () => {
+    floorLoaded = true;
+  };
+
+  tankImage.onload = () => {
+    tankLoaded = true;
+  };
+
+  // --- Room Layout -----------------------------------------------------------
+  // 0 = floor, 1 = wall, 2 = exit door
+
+  const TILES = {
     FLOOR: 0,
     WALL: 1,
+    EXIT: 2,
   };
 
-  // Colors for tiles and entities
-  const COLORS = {
-    [TILE.FLOOR]: "#2b2b40",
-    [TILE.WALL]: "#70708c",
-    player: "#ffcc33",
-  };
+  const room = [
+    // 20 columns wide
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1],
+    [1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1],
+    [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1],
+    [1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  ];
 
-  // --- Map -------------------------------------------------------------------
+  const EXIT_TILE_POS = { x: 18, y: 1 };
 
-  // Simple room-like layout: walls around the edges and a few internal walls.
-  const map = createMap();
-
-  function createMap() {
-    const grid = [];
-
-    for (let y = 0; y < MAP_ROWS; y += 1) {
-      const row = [];
-      for (let x = 0; x < MAP_COLS; x += 1) {
-        const isBorder =
-          y === 0 || y === MAP_ROWS - 1 || x === 0 || x === MAP_COLS - 1;
-        row.push(isBorder ? TILE.WALL : TILE.FLOOR);
-      }
-      grid.push(row);
-    }
-
-    // A few interior walls for interest
-    for (let x = 4; x < 10; x += 1) {
-      grid[5][x] = TILE.WALL;
-    }
-    for (let y = 7; y < 12; y += 1) {
-      grid[y][12] = TILE.WALL;
-    }
-
-    return grid;
-  }
-
-  function rectCollidesWithWall(x, y, width, height) {
-    const leftTile = Math.floor(x / TILE_SIZE);
-    const rightTile = Math.floor((x + width - 1) / TILE_SIZE);
-    const topTile = Math.floor(y / TILE_SIZE);
-    const bottomTile = Math.floor((y + height - 1) / TILE_SIZE);
-
-    for (let ty = topTile; ty <= bottomTile; ty += 1) {
-      for (let tx = leftTile; tx <= rightTile; tx += 1) {
-        if (
-          tx < 0 ||
-          tx >= MAP_COLS ||
-          ty < 0 ||
-          ty >= MAP_ROWS ||
-          map[ty][tx] === TILE.WALL
-        ) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
+  const statusEl = document.getElementById("statusText");
 
   // --- Player ----------------------------------------------------------------
 
   const player = {
-    x: (2.5) * TILE_SIZE,
-    y: (2.5) * TILE_SIZE,
+    x: TILE_SIZE * 2.5,
+    y: TILE_SIZE * 8.5,
+    angle: -Math.PI / 2, // facing "up"
+    frame: 0,
+    frameTimer: 0,
+    isMoving: false,
   };
+
+  const PLAYER_ANIM_FRAME_DURATION = 0.16;
+
+  // A soft radius used for collision testing that roughly matches the tank body.
+  const PLAYER_COLLISION_RADIUS = 18;
 
   // --- Input -----------------------------------------------------------------
 
-  const inputState = {
+  const input = {
     up: false,
     down: false,
     left: false,
@@ -115,128 +103,220 @@
     D: "right",
   };
 
-  window.addEventListener("keydown", (event) => {
-    const action = KEY_MAP[event.key];
+  window.addEventListener("keydown", (e) => {
+    const action = KEY_MAP[e.key];
     if (!action) return;
-    inputState[action] = true;
-    event.preventDefault();
+    input[action] = true;
+    e.preventDefault();
   });
 
-  window.addEventListener("keyup", (event) => {
-    const action = KEY_MAP[event.key];
+  window.addEventListener("keyup", (e) => {
+    const action = KEY_MAP[e.key];
     if (!action) return;
-    inputState[action] = false;
-    event.preventDefault();
+    input[action] = false;
+    e.preventDefault();
   });
 
-  // --- Game Loop -------------------------------------------------------------
+  // --- Helpers ---------------------------------------------------------------
 
-  let lastFrameTime = 0;
+  function tileAtPixel(px, py) {
+    const tx = Math.floor(px / TILE_SIZE);
+    const ty = Math.floor(py / TILE_SIZE);
+    if (tx < 0 || ty < 0 || tx >= ROOM_COLS || ty >= ROOM_ROWS) return TILES.WALL;
+    return room[ty][tx];
+  }
+
+  function isSolidTile(tile) {
+    return tile === TILES.WALL;
+  }
+
+  function reachedExit() {
+    const exitCenterX = (EXIT_TILE_POS.x + 0.5) * TILE_SIZE;
+    const exitCenterY = (EXIT_TILE_POS.y + 0.5) * TILE_SIZE;
+    const dx = player.x - exitCenterX;
+    const dy = player.y - exitCenterY;
+    return Math.hypot(dx, dy) < TILE_SIZE * 0.6;
+  }
+
+  // --- Simulation ------------------------------------------------------------
+
+  let lastTime = 0;
+  let escaped = false;
 
   function update(timestamp) {
-    if (!lastFrameTime) {
-      lastFrameTime = timestamp;
+    if (!lastTime) {
+      lastTime = timestamp;
+      requestAnimationFrame(update);
       return;
     }
 
-    const deltaMs = timestamp - lastFrameTime;
-    const dt = deltaMs / 1000; // seconds
-    lastFrameTime = timestamp;
+    const dt = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
 
-    handleMovement(dt);
+    stepPlayer(dt);
+    updateAnimation(dt);
+    render();
+
+    requestAnimationFrame(update);
   }
 
-  function handleMovement(dt) {
-    let moveX = 0;
-    let moveY = 0;
+  function stepPlayer(dt) {
+    if (escaped) return;
 
-    if (inputState.up) moveY -= 1;
-    if (inputState.down) moveY += 1;
-    if (inputState.left) moveX -= 1;
-    if (inputState.right) moveX += 1;
+    let moveForward = 0;
+    let rotateDir = 0;
 
-    if (moveX === 0 && moveY === 0) return;
+    if (input.up) moveForward += 1;
+    if (input.down) moveForward -= 1;
+    if (input.left) rotateDir -= 1;
+    if (input.right) rotateDir += 1;
 
-    // Normalize diagonal movement so speed is consistent.
-    const length = Math.hypot(moveX, moveY);
-    if (length > 0) {
-      moveX /= length;
-      moveY /= length;
+    player.isMoving = moveForward !== 0;
+
+    if (rotateDir !== 0) {
+      player.angle += rotateDir * PLAYER_ROTATE_SPEED * dt;
     }
 
-    const distance = PLAYER_SPEED * dt;
-    const dx = moveX * distance;
-    const dy = moveY * distance;
-    const half = PLAYER_SIZE / 2;
+    if (!player.isMoving) return;
 
-    // Move on X axis
-    const proposedX = player.x + dx;
-    if (
-      !rectCollidesWithWall(
-        proposedX - half,
-        player.y - half,
-        PLAYER_SIZE,
-        PLAYER_SIZE
-      )
-    ) {
-      player.x = proposedX;
+    const distance = PLAYER_SPEED * dt * Math.sign(moveForward);
+    const dx = Math.cos(player.angle) * distance;
+    const dy = Math.sin(player.angle) * distance;
+
+    const nextX = player.x + dx;
+    const nextY = player.y + dy;
+
+    // Collision: sample a small cross-shape around the tank center.
+    const samplePoints = [
+      [nextX, nextY],
+      [nextX + PLAYER_COLLISION_RADIUS, nextY],
+      [nextX - PLAYER_COLLISION_RADIUS, nextY],
+      [nextX, nextY + PLAYER_COLLISION_RADIUS],
+      [nextX, nextY - PLAYER_COLLISION_RADIUS],
+    ];
+
+    let blocked = false;
+    for (const [sx, sy] of samplePoints) {
+      if (isSolidTile(tileAtPixel(sx, sy))) {
+        blocked = true;
+        break;
+      }
     }
 
-    // Move on Y axis
-    const proposedY = player.y + dy;
-    if (
-      !rectCollidesWithWall(
-        player.x - half,
-        proposedY - half,
-        PLAYER_SIZE,
-        PLAYER_SIZE
-      )
-    ) {
-      player.y = proposedY;
+    if (!blocked) {
+      player.x = nextX;
+      player.y = nextY;
+    }
+
+    if (!escaped && reachedExit()) {
+      escaped = true;
+      if (statusEl) statusEl.textContent = "You escaped this block. Nice work, SawTank.";
     }
   }
+
+  function updateAnimation(dt) {
+    if (!tankLoaded) return;
+
+    if (!player.isMoving) {
+      player.frame = 0;
+      player.frameTimer = 0;
+      return;
+    }
+
+    player.frameTimer += dt;
+    if (player.frameTimer >= PLAYER_ANIM_FRAME_DURATION) {
+      player.frameTimer -= PLAYER_ANIM_FRAME_DURATION;
+      player.frame = (player.frame + 1) % 2;
+    }
+  }
+
+  // --- Rendering -------------------------------------------------------------
 
   function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw tiles
-    for (let y = 0; y < MAP_ROWS; y += 1) {
-      for (let x = 0; x < MAP_COLS; x += 1) {
-        const tile = map[y][x];
-        const color = COLORS[tile] || "#000000";
-        ctx.fillStyle = color;
-        ctx.fillRect(
-          x * TILE_SIZE,
-          y * TILE_SIZE,
-          TILE_SIZE,
-          TILE_SIZE
-        );
+    drawFloor();
+    drawWallsAndExit();
+    drawPlayer();
+  }
+
+  function drawFloor() {
+    for (let y = 0; y < ROOM_ROWS; y += 1) {
+      for (let x = 0; x < ROOM_COLS; x += 1) {
+        const px = x * TILE_SIZE;
+        const py = y * TILE_SIZE;
+
+        if (floorLoaded) {
+          ctx.drawImage(
+            floorImage,
+            0,
+            0,
+            floorImage.width,
+            floorImage.height,
+            px,
+            py,
+            TILE_SIZE,
+            TILE_SIZE
+          );
+        } else {
+          ctx.fillStyle = "#0c3113";
+          ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        }
       }
     }
-
-    // Draw player
-    ctx.fillStyle = COLORS.player;
-    ctx.fillRect(
-      player.x - PLAYER_SIZE / 2,
-      player.y - PLAYER_SIZE / 2,
-      PLAYER_SIZE,
-      PLAYER_SIZE
-    );
   }
 
-  function gameLoop(timestamp) {
-    update(timestamp);
-    render();
-    window.requestAnimationFrame(gameLoop);
+  function drawWallsAndExit() {
+    for (let y = 0; y < ROOM_ROWS; y += 1) {
+      for (let x = 0; x < ROOM_COLS; x += 1) {
+        const tile = room[y][x];
+        const px = x * TILE_SIZE;
+        const py = y * TILE_SIZE;
+
+        if (tile === TILES.WALL) {
+          ctx.fillStyle = "#143324";
+          ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+          ctx.strokeStyle = "rgba(8, 16, 12, 0.5)";
+          ctx.strokeRect(px + 0.5, py + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
+        } else if (tile === TILES.EXIT) {
+          const grad = ctx.createLinearGradient(px, py, px, py + TILE_SIZE);
+          grad.addColorStop(0, "#3ee6a8");
+          grad.addColorStop(1, "#17835a");
+          ctx.fillStyle = grad;
+          ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+          ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+          ctx.strokeRect(px + 0.5, py + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
+        }
+      }
+    }
   }
 
-  // Start the loop once everything is ready
-  window.requestAnimationFrame(gameLoop);
+  function drawPlayer() {
+    if (!tankLoaded) return;
 
-  // ---------------------------------------------------------------------------
-  // Future extension hooks:
-  // - NPCs and guards with simple AI that patrol on the same grid.
-  // - Interactable objects (desks, doors) using an interaction key.
-  // - Tile metadata for things like cells, contraband zones, and vision cones.
+    const frameCount = 2;
+    const frameIndex = player.frame % frameCount;
+
+    // We know the sheet is two frames laid out horizontally.
+    const frameWidth = tankImage.width / frameCount;
+    const frameHeight = tankImage.height;
+    const sx = frameIndex * frameWidth;
+    const sy = 0;
+
+    const dw = frameWidth;
+    const dh = frameHeight;
+
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    // Top of the sprite is forward.
+    ctx.rotate(player.angle);
+    ctx.drawImage(tankImage, sx, sy, frameWidth, frameHeight, -dw / 2, -dh / 2, dw, dh);
+    ctx.restore();
+  }
+
+  // --- Kick things off -------------------------------------------------------
+
+  if (statusEl) statusEl.textContent = "Find the glowing exit tile.";
+  requestAnimationFrame(update);
 })();
 

@@ -12,17 +12,61 @@ body {
 }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Mono", Menlo, Consolas,
-    monospace;
-  background-color: #111118;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #1b1f3a 0, #050611 55%, #020308 100%);
   color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-#gameCanvas {
+.page {
+  width: 100%;
+  max-width: 1120px;
+  padding: 16px 20px 24px;
+}
+
+.hud {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  color: #e4ecff;
+}
+
+.hud-title {
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.hud-subtitle {
+  opacity: 0.7;
+  font-size: 0.8rem;
+  margin-left: 8px;
+}
+
+.hud-status {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.game-shell {
+  background: radial-gradient(circle at top left, #14182f, #040612 65%);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+canvas#gameCanvas {
   display: block;
-  width: 100vw;
-  height: 100vh;
-  image-rendering: pixelated;
-  background: #202030;
+  border-radius: 12px;
+  background: #102414;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
 }
 
