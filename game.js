@@ -13,7 +13,7 @@
   const ROOM_ROWS = 11;
   const TILE_SIZE = 48; // logical tiles, but movement is fully analog
 
-  const PLAYER_SPEED = 210; // pixels / second
+  const PLAYER_SPEED = 130; // pixels / second (slower scene pacing)
   const PLAYER_ROTATE_SPEED = Math.PI * 1.4; // radians / second
 
   // --- Assets ----------------------------------------------------------------
@@ -24,8 +24,12 @@
   const tankImage = new Image();
   tankImage.src = "SawTank-Sheet-export.png";
 
+  const bigPhillyImage = new Image();
+  bigPhillyImage.src = "bigphilly.png";
+
   let floorLoaded = false;
   let tankLoaded = false;
+  let bigPhillyLoaded = false;
 
   floorImage.onload = () => {
     floorLoaded = true;
@@ -33,6 +37,10 @@
 
   tankImage.onload = () => {
     tankLoaded = true;
+  };
+
+  bigPhillyImage.onload = () => {
+    bigPhillyLoaded = true;
   };
 
   // --- Room Layout -----------------------------------------------------------
@@ -44,30 +52,34 @@
     EXIT: 2,
   };
 
-  const room = [
-    // 20 columns wide
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1],
-    [1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-    [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1],
-    [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
-    [1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1],
-    [1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  ];
-
   const EXIT_TILE_POS = { x: 18, y: 1 };
+  const BIG_PHILLY_POS = { x: 1.8, y: 1.8 };
+
+  const room = Array.from({ length: ROOM_ROWS }, (_, y) =>
+    Array.from({ length: ROOM_COLS }, (_, x) => {
+      const isBorder =
+        y === 0 || y === ROOM_ROWS - 1 || x === 0 || x === ROOM_COLS - 1;
+      return isBorder ? TILES.WALL : TILES.FLOOR;
+    })
+  );
+  room[EXIT_TILE_POS.y][EXIT_TILE_POS.x] = TILES.EXIT;
+
+  // Jail bar corridor near the bottom so the tank starts in a narrow lane.
+  // This creates two vertical walls at columns 9 and 11 for rows 6-9,
+  // leaving a straight corridor at column 10.
+  for (let y = 6; y <= 9; y += 1) {
+    room[y][9] = TILES.WALL;
+    room[y][11] = TILES.WALL;
+  }
 
   const statusEl = document.getElementById("statusText");
 
   // --- Player ----------------------------------------------------------------
 
   const player = {
-    x: TILE_SIZE * 2.5,
-    y: TILE_SIZE * 8.5,
+    // Start in the bottom middle, just above the bottom wall
+    x: (10.5) * TILE_SIZE,
+    y: (9.5) * TILE_SIZE,
     angle: -Math.PI / 2, // facing "up"
     frame: 0,
     frameTimer: 0,
@@ -230,6 +242,7 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     drawFloor();
+    drawBigPhilly();
     drawWallsAndExit();
     drawPlayer();
   }
@@ -268,10 +281,20 @@
         const py = y * TILE_SIZE;
 
         if (tile === TILES.WALL) {
-          ctx.fillStyle = "#143324";
+          // Dark cell behind the bars
+          ctx.fillStyle = "#0d1a14";
           ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-          ctx.strokeStyle = "rgba(8, 16, 12, 0.5)";
-          ctx.strokeRect(px + 0.5, py + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
+          // Vertical jail bars
+          const barWidth = 4;
+          const barGap = 8;
+          ctx.fillStyle = "#2a3d32";
+          for (let bx = px; bx < px + TILE_SIZE; bx += barWidth + barGap) {
+            ctx.fillRect(bx, py, barWidth, TILE_SIZE);
+          }
+          // Top and bottom rails
+          ctx.fillStyle = "#1e2b24";
+          ctx.fillRect(px, py, TILE_SIZE, 3);
+          ctx.fillRect(px, py + TILE_SIZE - 3, TILE_SIZE, 3);
         } else if (tile === TILES.EXIT) {
           const grad = ctx.createLinearGradient(px, py, px, py + TILE_SIZE);
           grad.addColorStop(0, "#3ee6a8");
@@ -283,6 +306,27 @@
         }
       }
     }
+  }
+
+  function drawBigPhilly() {
+    if (!bigPhillyLoaded) return;
+
+    const maxWidth = TILE_SIZE * 1.2;
+    const maxHeight = TILE_SIZE * 1.2;
+    const scale = Math.min(
+      maxWidth / bigPhillyImage.width,
+      maxHeight / bigPhillyImage.height
+    );
+    const drawWidth = bigPhillyImage.width * scale;
+    const drawHeight = bigPhillyImage.height * scale;
+
+    ctx.drawImage(
+      bigPhillyImage,
+      BIG_PHILLY_POS.x * TILE_SIZE - drawWidth / 2,
+      BIG_PHILLY_POS.y * TILE_SIZE - drawHeight / 2,
+      drawWidth,
+      drawHeight
+    );
   }
 
   function drawPlayer() {
