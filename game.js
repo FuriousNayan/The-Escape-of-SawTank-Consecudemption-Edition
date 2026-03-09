@@ -27,9 +27,13 @@
   const bigPhillyImage = new Image();
   bigPhillyImage.src = "bigphilly.png";
 
+  const barsImage = new Image();
+  barsImage.src = "bars.png";
+
   let floorLoaded = false;
   let tankLoaded = false;
   let bigPhillyLoaded = false;
+  let barsLoaded = false;
 
   floorImage.onload = () => {
     floorLoaded = true;
@@ -41,6 +45,10 @@
 
   bigPhillyImage.onload = () => {
     bigPhillyLoaded = true;
+  };
+
+  barsImage.onload = () => {
+    barsLoaded = true;
   };
 
   // --- Room Layout -----------------------------------------------------------
@@ -90,6 +98,13 @@
 
   // A soft radius used for collision testing that roughly matches the tank body.
   const PLAYER_COLLISION_RADIUS = 18;
+
+  // Trail marks: appear behind the tank and fade out.
+  const trailMarks = [];
+  const TRAIL_MARK_INTERVAL = 12; // pixels between marks
+  const TRAIL_MARK_LIFETIME = 1.8; // seconds
+  let lastTrailX = player.x;
+  let lastTrailY = player.y;
 
   // --- Input -----------------------------------------------------------------
 
@@ -167,6 +182,7 @@
 
     stepPlayer(dt);
     updateAnimation(dt);
+    updateTrailMarks(lastTime);
     render();
 
     requestAnimationFrame(update);
@@ -218,11 +234,39 @@
     if (!blocked) {
       player.x = nextX;
       player.y = nextY;
+
+      const dist = Math.hypot(player.x - lastTrailX, player.y - lastTrailY);
+      if (dist >= TRAIL_MARK_INTERVAL) {
+        const perpX = -Math.sin(player.angle);
+        const perpY = Math.cos(player.angle);
+        const offset = 10;
+        trailMarks.push({
+          x: player.x + perpX * offset,
+          y: player.y + perpY * offset,
+          angle: player.angle,
+          t: lastTime,
+        });
+        trailMarks.push({
+          x: player.x - perpX * offset,
+          y: player.y - perpY * offset,
+          angle: player.angle,
+          t: lastTime,
+        });
+        lastTrailX = player.x;
+        lastTrailY = player.y;
+      }
     }
 
     if (!escaped && reachedExit()) {
       escaped = true;
       if (statusEl) statusEl.textContent = "You escaped this block. Nice work, SawTank.";
+    }
+  }
+
+  function updateTrailMarks(now) {
+    const cutoff = now - TRAIL_MARK_LIFETIME * 1000;
+    while (trailMarks.length > 0 && trailMarks[0].t < cutoff) {
+      trailMarks.shift();
     }
   }
 
@@ -242,9 +286,29 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     drawFloor();
+    drawTrailMarks(lastTime);
     drawBigPhilly();
     drawWallsAndExit();
     drawPlayer();
+  }
+
+  function drawTrailMarks(now) {
+    const markW = 14;
+    const markH = 6;
+
+    for (const m of trailMarks) {
+      const age = (now - m.t) / 1000;
+      const life = 1 - age / TRAIL_MARK_LIFETIME;
+      if (life <= 0) continue;
+
+      ctx.save();
+      ctx.translate(m.x, m.y);
+      ctx.rotate(m.angle);
+      ctx.globalAlpha = life * 0.5;
+      ctx.fillStyle = "#0a0f0a";
+      ctx.fillRect(-markW / 2, -markH / 2, markW, markH);
+      ctx.restore();
+    }
   }
 
   function drawFloor() {
@@ -281,20 +345,22 @@
         const py = y * TILE_SIZE;
 
         if (tile === TILES.WALL) {
-          // Dark cell behind the bars
-          ctx.fillStyle = "#0d1a14";
-          ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-          // Vertical jail bars
-          const barWidth = 4;
-          const barGap = 8;
-          ctx.fillStyle = "#2a3d32";
-          for (let bx = px; bx < px + TILE_SIZE; bx += barWidth + barGap) {
-            ctx.fillRect(bx, py, barWidth, TILE_SIZE);
+          if (barsLoaded) {
+            ctx.drawImage(
+              barsImage,
+              0,
+              0,
+              barsImage.width,
+              barsImage.height,
+              px,
+              py,
+              TILE_SIZE,
+              TILE_SIZE
+            );
+          } else {
+            ctx.fillStyle = "#0d1a14";
+            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
           }
-          // Top and bottom rails
-          ctx.fillStyle = "#1e2b24";
-          ctx.fillRect(px, py, TILE_SIZE, 3);
-          ctx.fillRect(px, py + TILE_SIZE - 3, TILE_SIZE, 3);
         } else if (tile === TILES.EXIT) {
           const grad = ctx.createLinearGradient(px, py, px, py + TILE_SIZE);
           grad.addColorStop(0, "#3ee6a8");
@@ -346,17 +412,17 @@
 
     ctx.save();
     ctx.translate(player.x, player.y);
-    // Top of the sprite is forward; pivot is biased slightly toward the back of the tank body.
     ctx.rotate(player.angle);
-    const pivotYOffset = dh * 0.15; // move pivot a little down from the exact center
+    // Pivot toward the back of the tank: shift on X axis.
+    const pivotBack = dw * 0.25;
     ctx.drawImage(
       tankImage,
       sx,
       sy,
       frameWidth,
       frameHeight,
-      -dw / 2,
-      -dh / 2 + pivotYOffset,
+      -dw / 2 + pivotBack,
+      -dh / 2,
       dw,
       dh
     );
