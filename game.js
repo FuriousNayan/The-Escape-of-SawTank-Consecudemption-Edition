@@ -315,30 +315,6 @@
     drawCharacters();
     drawWallsAndExit();
     drawPlayer();
-
-    ctx.restore();
-<<<<<<< Updated upstream
-  }
-
-  function drawTrailMarks(now) {
-    const markW = 14;
-    const markH = 6;
-
-    for (const m of trailMarks) {
-      const age = (now - m.t) / 1000;
-      const life = 1 - age / TRAIL_MARK_LIFETIME;
-      if (life <= 0) continue;
-
-      ctx.save();
-      ctx.translate(m.x, m.y);
-      ctx.rotate(m.angle);
-      ctx.globalAlpha = life * 0.5;
-      ctx.fillStyle = "#0a0f0a";
-      ctx.fillRect(-markW / 2, -markH / 2, markW, markH);
-      ctx.restore();
-    }
-=======
->>>>>>> Stashed changes
   }
 
   function drawFloor() {
