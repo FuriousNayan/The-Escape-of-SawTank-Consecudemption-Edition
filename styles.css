@@ -90,7 +90,7 @@ canvas#gameCanvas {
   height: 100%;
   object-fit: contain;
   border-radius: 8px;
-  background: #102414;
+  background: #040612;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
 }
 
@@ -129,14 +129,14 @@ canvas#gameCanvas {
   gap: 10px;
 }
 
-/* Diamond shape for speaker portrait */
+/* Square speaker portrait */
 .dialogue-portrait {
   width: 110px;
   height: 110px;
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
   border: 2px solid rgba(255, 255, 255, 0.6);
   overflow: hidden;
   background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
 }
 
 .dialogue-portrait img {
@@ -145,6 +145,12 @@ canvas#gameCanvas {
   object-fit: cover;
   display: block;
   transform: scale(0.92);
+}
+
+/* Saw-Tank face - show whole image, no cropping */
+.dialogue-portrait[data-portrait="sawTank_face"] img {
+  object-fit: contain;
+  transform: none;
 }
 
 /* Name bar underneath diamond */
@@ -172,6 +178,11 @@ canvas#gameCanvas {
 
 .dialogue-speaker[data-speaker="floyd"] {
   color: #f9a825;
+}
+
+/* Saw-Tank - dark bluish green */
+.dialogue-speaker[data-speaker="saw-tank"] {
+  color: #1e4d4e;
 }
 
 /* Red thinking - italic, wrap so "(thinking)" is visible */

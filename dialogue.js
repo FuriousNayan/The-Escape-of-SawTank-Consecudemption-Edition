@@ -66,7 +66,10 @@
     dialogueSpeaker.textContent = speakerLabel;
     dialogueSpeaker.dataset.speaker = (speaker || "").toLowerCase();
     dialogueSpeaker.dataset.thought = thought ? "1" : "0";
-    if (dialoguePortrait) dialoguePortrait.src = portraitPath(portrait);
+    if (dialoguePortrait) {
+      dialoguePortrait.src = portraitPath(portrait);
+      if (dialoguePortrait.parentElement) dialoguePortrait.parentElement.dataset.portrait = portrait || "";
+    }
     dialogueBox.classList.add("visible");
     dialogueBox.setAttribute("aria-hidden", "false");
     state.visible = true;

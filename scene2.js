@@ -19,7 +19,7 @@
 
     // --- Assets ----------------------------------------------------------------
     const floorImage = new Image();
-    floorImage.src = "images/dirt.png";
+    floorImage.src = "images/Dirt.png";
     const tankImage = new Image();
     tankImage.src = "images/SawTank-Sheet-export.png";
     const bigPhillyImage = new Image();
