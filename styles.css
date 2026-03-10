@@ -144,7 +144,7 @@ canvas#gameCanvas {
   height: 100%;
   object-fit: cover;
   display: block;
-  transform: scale(0.75);
+  transform: scale(0.92);
 }
 
 /* Name bar underneath diamond */
@@ -159,6 +159,10 @@ canvas#gameCanvas {
   text-align: center;
   border: 2px solid rgba(255, 255, 255, 0.5);
   background: rgba(0, 0, 0, 0.4);
+}
+
+.dialogue-speaker[data-speaker="floyd"] {
+  color: #f9a825;
 }
 
 /* Right: dialogue text bars */

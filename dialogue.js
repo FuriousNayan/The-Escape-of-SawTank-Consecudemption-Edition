@@ -44,6 +44,7 @@
     }
     state.currentLineText = text;
     dialogueSpeaker.textContent = speaker || "";
+    dialogueSpeaker.dataset.speaker = (speaker || "").toLowerCase();
     if (dialoguePortrait) dialoguePortrait.src = portraitPath(portrait);
     dialogueBox.classList.add("visible");
     dialogueBox.setAttribute("aria-hidden", "false");
