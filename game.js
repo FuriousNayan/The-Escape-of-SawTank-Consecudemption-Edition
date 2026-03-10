@@ -34,8 +34,8 @@
     requestAnimationFrame(loop);
   }
 
-  // Start with scene 1; ensure scenes are loaded first
-  goToScene("scene1");
+  // Start with play screen; ensure scenes are loaded first
+  goToScene("play");
   requestAnimationFrame(loop);
 
   // Expose for switching scenes (e.g. from scene 1: goToScene("scene2"))
