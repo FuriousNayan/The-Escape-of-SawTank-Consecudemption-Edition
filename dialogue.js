@@ -30,6 +30,9 @@
   /** Phil audio: play phil_full whenever Red (Big Philly) speaks. */
   const philFullAudio = new Audio("sounds/phil_full.mp3");
 
+  /** Boohbah theme: play whenever Heywood speaks. */
+  const boohbahAudio = new Audio("sounds/boohbah.mp3");
+
   /** Returns true if the current speaker is Red (Big Philly). */
   function isRedSpeaking(speaker, portrait) {
     const s = String(speaker || "").toLowerCase();
@@ -37,6 +40,15 @@
     if (!portrait) return false;
     const p = String(portrait).toLowerCase();
     return p === "bigphilly" || p === "images/bigphilly.png";
+  }
+
+  /** Returns true if the current speaker is Heywood. */
+  function isHeywoodSpeaking(speaker, portrait) {
+    const s = String(speaker || "").toLowerCase();
+    if (s === "heywood") return true;
+    if (!portrait) return false;
+    const p = String(portrait).toLowerCase();
+    return p === "heywood" || p === "images/heywood.png";
   }
 
   /** Words that get the "slap" emphasis effect (red, punchy animation). Case-insensitive. */
@@ -53,15 +65,26 @@
     philFullAudio.currentTime = 0;
   }
 
+  function stopBoohbahAudio() {
+    boohbahAudio.pause();
+    boohbahAudio.currentTime = 0;
+  }
+
+  function stopAllCharacterAudio() {
+    stopPhilAudio();
+    stopBoohbahAudio();
+  }
+
   function show(speaker, text, portrait, thought) {
     if (!dialogueBox || !dialogueSpeaker || !dialogueText) return;
-    stopPhilAudio(); // Cut Red's audio when speaker changes
+    stopAllCharacterAudio(); // Cut character audio when speaker changes
     if (state.typewriterId) {
       clearInterval(state.typewriterId);
       state.typewriterId = null;
     }
     state.currentLineText = text;
     state.currentRedLine = isRedSpeaking(speaker, portrait) && !thought;
+    state.currentHeywoodLine = isHeywoodSpeaking(speaker, portrait);
     const speakerLabel = thought ? (speaker ? speaker + " (thinking)" : "(thinking)") : (speaker || "");
     dialogueSpeaker.textContent = speakerLabel;
     dialogueSpeaker.dataset.speaker = (speaker || "").toLowerCase();
@@ -80,6 +103,10 @@
     if (state.currentRedLine) {
       philFullAudio.currentTime = 0;
       philFullAudio.play().catch(() => {});
+    }
+    if (state.currentHeywoodLine) {
+      boohbahAudio.currentTime = 0;
+      boohbahAudio.play().catch(() => {});
     }
 
     const tokens = text.split(/(\s+)/);
@@ -161,7 +188,7 @@
 
   function hide() {
     if (!dialogueBox) return;
-    stopPhilAudio(); // Cut Red's audio when dialogue closes
+    stopAllCharacterAudio(); // Cut character audio when dialogue closes
     dialogueBox.classList.remove("visible");
     dialogueBox.setAttribute("aria-hidden", "true");
     state.visible = false;
