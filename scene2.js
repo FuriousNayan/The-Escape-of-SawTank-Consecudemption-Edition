@@ -28,24 +28,29 @@
     barsImage.src = "images/bars.png";
     const heywoodImage = new Image();
     heywoodImage.src = "images/heywood.png";
+    const floydImage = new Image();
+    floydImage.src = "images/Mr-Gardner.png";
 
     let floorLoaded = false;
     let tankLoaded = false;
     let bigPhillyLoaded = false;
     let barsLoaded = false;
     let heywoodLoaded = false;
+    let floydLoaded = false;
 
     floorImage.onload = () => (floorLoaded = true);
     tankImage.onload = () => (tankLoaded = true);
     bigPhillyImage.onload = () => (bigPhillyLoaded = true);
     barsImage.onload = () => (barsLoaded = true);
     heywoodImage.onload = () => (heywoodLoaded = true);
+    floydImage.onload = () => (floydLoaded = true);
 
     // --- Room Layout -----------------------------------------------------------
     const TILES = { FLOOR: 0, WALL: 1, EXIT: 2 };
     const EXIT_TILE_POS = { x: 18, y: 1 };
     const BIG_PHILLY_POS = { x: 1.8, y: 1.8 };
     const HEYWOOD_POS = { x: 3.5, y: 1.8 };
+    const FLOYD_POS = { x: 5.2, y: 1.8 };
 
     const room = Array.from({ length: ROOM_ROWS }, (_, y) =>
       Array.from({ length: ROOM_COLS }, (_, x) => {
@@ -54,10 +59,24 @@
         return isBorder ? TILES.WALL : TILES.FLOOR;
       })
     );
-    room[EXIT_TILE_POS.y][EXIT_TILE_POS.x] = TILES.EXIT;
-    for (let y = 6; y <= 9; y += 1) {
-      room[y][9] = TILES.WALL;
-      room[y][11] = TILES.WALL;
+    // Winding path of prison bars: single linear route to exit (top right)
+    // Fill the right half with walls, then carve the path
+    for (let y = 1; y <= 9; y += 1) {
+      for (let x = 9; x <= 18; x += 1) {
+        room[y][x] = TILES.WALL;
+      }
+    }
+    // Carve winding path: from spawn area to exit (18,1)
+    const PATH = [
+      [10,9],[11,9],[12,9],[10,8],[10,7],[10,6],  // clear blocks in front, up to path
+      [11,6],[12,6],                       // right
+      [12,5],[12,4],                       // up
+      [13,4],[14,4],[15,4],[16,4],         // right
+      [16,3],[16,2],                       // up
+      [17,2],[17,1],[18,1],                // right to exit
+    ];
+    for (const [px, py] of PATH) {
+      room[py][px] = (px === 18 && py === 1) ? TILES.EXIT : TILES.FLOOR;
     }
 
     const statusEl = document.getElementById("statusText");
@@ -263,6 +282,16 @@
       ctx.drawImage(heywoodImage, HEYWOOD_POS.x * TILE_SIZE - dw / 2, HEYWOOD_POS.y * TILE_SIZE - dh / 2, dw, dh);
     }
 
+    function drawFloyd() {
+      if (!floydLoaded) return;
+      const maxW = TILE_SIZE * 1.1;
+      const maxH = TILE_SIZE * 1.1;
+      const scale = Math.min(maxW / floydImage.width, maxH / floydImage.height);
+      const dw = floydImage.width * scale;
+      const dh = floydImage.height * scale;
+      ctx.drawImage(floydImage, FLOYD_POS.x * TILE_SIZE - dw / 2, FLOYD_POS.y * TILE_SIZE - dh / 2, dw, dh);
+    }
+
     function drawPlayer() {
       if (!tankLoaded) return;
       const frameCount = 2;
@@ -291,6 +320,7 @@
       drawWallsAndExit,
       drawBigPhilly,
       drawHeywood,
+      drawFloyd,
       drawPlayer,
       canvas,
       ctx,
@@ -298,12 +328,12 @@
     if (statusEl) statusEl.textContent = "Find the glowing exit tile.";
     if (window.Dialogue) {
       const script = [
-        { speaker: "Floyd", text: "Takin' bets today, Red?", portrait: "heywood" },
+        { speaker: "Floyd", text: "Takin' bets today, Red?", portrait: "Mr-Gardner" },
         { speaker: "Red", text: "Smokes or coins, bettor's choice.", portrait: "bigphilly" },
-        { speaker: "Floyd", text: "Smokes. Put me down for two. That little sack o' boohshi, eighth from the front. He'll be first.", portrait: "heywood" },
+        { speaker: "Floyd", text: "Smokes. Put me down for two. That little sack o' boohshi, eighth from the front. He'll be first.", portrait: "Mr-Gardner" },
         { speaker: "Red", text: "All right, who's your horse?", portrait: "bigphilly" },
         { speaker: "Heywood", text: "Aw, boohshi. I'll call that action. You out some smokes, son, let me tell you!", portrait: "heywood" },
-        { speaker: "Floyd", text: "Well, Heywood, you so smart, you call it!", portrait: "heywood" },
+        { speaker: "Floyd", text: "Well, Heywood, you so smart, you call it!", portrait: "Mr-Gardner" },
         { speaker: "Heywood", text: "I'll take the chubby fat-bah there. Fifth from the front. Put me down for a quarter deck.", portrait: "heywood" },
         { speaker: "Red", text: "I had my money on Saw Tank. A tall drink of water with a silver spoon up his ass.", portrait: "bigphilly", thought: true },
         { speaker: "Red", text: "I didn't think much of Saw the first time I laid eyes on him. Looked like a stiff breeze would blow him over.", portrait: "bigphilly", thought: true },
@@ -334,6 +364,7 @@
     impl.drawTrailMarks(now);
     impl.drawBigPhilly();
     impl.drawHeywood();
+    impl.drawFloyd();
     impl.drawWallsAndExit();
     impl.drawPlayer();
   }
