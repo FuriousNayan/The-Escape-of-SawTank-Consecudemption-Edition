@@ -19,7 +19,7 @@
 
     // --- Assets ----------------------------------------------------------------
     const floorImage = new Image();
-    floorImage.src = "images/grass.png";
+    floorImage.src = "images/dirt.png";
     const tankImage = new Image();
     tankImage.src = "images/SawTank-Sheet-export.png";
     const bigPhillyImage = new Image();
@@ -210,7 +210,7 @@
           if (floorLoaded) {
             ctx.drawImage(floorImage, 0, 0, floorImage.width, floorImage.height, px, py, TILE_SIZE, TILE_SIZE);
           } else {
-            ctx.fillStyle = "#0c3113";
+            ctx.fillStyle = "#3d2817";
             ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
           }
         }
