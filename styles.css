@@ -149,10 +149,11 @@ canvas#gameCanvas {
 
 /* Name bar underneath diamond */
 .dialogue-speaker {
-  width: 95px;
+  min-width: 95px;
+  max-width: 180px;
   padding: 8px 12px;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: clamp(0.75rem, 2vw, 0.95rem);
   color: #c62828;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -161,8 +162,24 @@ canvas#gameCanvas {
   background: rgba(0, 0, 0, 0.4);
 }
 
+/* Judge Christopher - green, fit in box */
+.dialogue-speaker[data-speaker="judge christopher"] {
+  color: #22c55e;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
+}
+
 .dialogue-speaker[data-speaker="floyd"] {
   color: #f9a825;
+}
+
+/* Red thinking - italic, wrap so "(thinking)" is visible */
+.dialogue-speaker[data-thought="1"] {
+  font-style: italic;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
 }
 
 /* Right: dialogue text bars */

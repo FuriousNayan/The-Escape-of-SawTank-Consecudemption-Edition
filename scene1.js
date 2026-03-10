@@ -23,9 +23,8 @@
     tankImage.onload = () => (tankLoaded = true);
 
     judgeImage = new Image();
-    judgeImage.src = "images/judge.png";
+    judgeImage.src = "images/chrisotfer.png";
     judgeImage.onload = () => (judgeLoaded = true);
-    judgeImage.onerror = () => {}; // Fallback to drawn placeholder
 
     const handler = (e) => {
       if (e.key !== "Enter" || !window.goToScene) return;
@@ -37,8 +36,8 @@
 
     if (window.Dialogue) {
       const script = [
-        { speaker: "Judge", text: "Verdict: Guilty. Murder in the first degree.", portrait: "judge" },
-        { speaker: "Judge", text: "Andy Dufresne — two life sentences at Shawshank State Prison.", portrait: "judge" },
+        { speaker: "Judge Christopher", text: "Verdict: Guilty. Murder in the first degree.", portrait: "chrisotfer" },
+        { speaker: "Judge Christopher", text: "Andy Dufresne — two life sentences at Shawshank State Prison.", portrait: "chrisotfer" },
       ];
       window.Dialogue.start(script);
     }
@@ -48,64 +47,16 @@
     elapsed += dt;
   }
 
-  function drawJudgePlaceholder() {
-    const w = canvas.width;
-    const h = canvas.height;
-    const benchY = h * 0.22;
-    const judgeX = w / 2;
-    const judgeY = benchY - 45;
-
-    // Robe body (dark silhouette)
-    ctx.fillStyle = "#1a1a2e";
-    ctx.beginPath();
-    ctx.moveTo(judgeX - 35, judgeY + 20);
-    ctx.lineTo(judgeX - 50, h * 0.5);
-    ctx.lineTo(judgeX + 50, h * 0.5);
-    ctx.lineTo(judgeX + 35, judgeY + 20);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = "#2d2d44";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Collar (white)
-    ctx.fillStyle = "#e8e6e3";
-    ctx.beginPath();
-    ctx.moveTo(judgeX - 15, judgeY + 18);
-    ctx.lineTo(judgeX, judgeY + 35);
-    ctx.lineTo(judgeX + 15, judgeY + 18);
-    ctx.closePath();
-    ctx.fill();
-
-    // Head (simple oval)
-    ctx.fillStyle = "#c9b896";
-    ctx.beginPath();
-    ctx.ellipse(judgeX, judgeY - 5, 22, 28, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Gavel
-    ctx.strokeStyle = "#5c4033";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(judgeX + 40, judgeY + 10);
-    ctx.lineTo(judgeX + 65, judgeY - 15);
-    ctx.stroke();
-    ctx.fillStyle = "#5c4033";
-    ctx.fillRect(judgeX + 58, judgeY - 28, 14, 12);
-  }
-
   function drawJudge() {
     const w = canvas.width;
     const h = canvas.height;
     const benchY = h * 0.22;
 
     if (judgeLoaded && judgeImage.complete && judgeImage.naturalWidth > 0) {
-      const scale = Math.min(120 / judgeImage.width, 140 / judgeImage.height);
+      const scale = Math.min(180 / judgeImage.width, 200 / judgeImage.height);
       const dw = judgeImage.width * scale;
       const dh = judgeImage.height * scale;
-      ctx.drawImage(judgeImage, w / 2 - dw / 2, benchY - dh - 20, dw, dh);
-    } else {
-      drawJudgePlaceholder();
+      ctx.drawImage(judgeImage, w / 2 - dw / 2, benchY - dh + 95, dw, dh);
     }
   }
 
@@ -169,15 +120,9 @@
       ctx.fillRect(x, 0, panelW + 1, h);
     }
 
-    // Top molding / judge's bench area
+    // Top molding (no bench/chair behind judge)
     ctx.fillStyle = "#1a0f0a";
     ctx.fillRect(0, 0, w, h * 0.2);
-    const benchGrad = ctx.createLinearGradient(0, 0, 0, h * 0.25);
-    benchGrad.addColorStop(0, "#1a0f0a");
-    benchGrad.addColorStop(0.4, "#3d2817");
-    benchGrad.addColorStop(1, "#2c1810");
-    ctx.fillStyle = benchGrad;
-    ctx.fillRect(0, h * 0.15, w, h * 0.15);
 
     // Jury box (left side) - below judge bar / verdict plaque
     ctx.fillStyle = "rgba(60, 40, 25, 0.6)";
@@ -202,26 +147,6 @@
     ctx.strokeStyle = "#5c4033";
     ctx.lineWidth = 4;
     ctx.strokeRect(w * 0.25, h * 0.62, w * 0.5, h * 0.25);
-
-    // Scales of justice above judge
-    ctx.strokeStyle = "#8b7355";
-    ctx.lineWidth = 2;
-    const scaleX = w / 2;
-    const scaleY = h * 0.08;
-    ctx.beginPath();
-    ctx.moveTo(scaleX - 30, scaleY + 25);
-    ctx.lineTo(scaleX + 30, scaleY + 25);
-    ctx.moveTo(scaleX, scaleY + 25);
-    ctx.lineTo(scaleX, scaleY);
-    ctx.moveTo(scaleX - 25, scaleY);
-    ctx.lineTo(scaleX - 25, scaleY - 15);
-    ctx.moveTo(scaleX + 25, scaleY);
-    ctx.lineTo(scaleX + 25, scaleY - 15);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(scaleX - 25, scaleY - 18, 6, 0, Math.PI * 2);
-    ctx.arc(scaleX + 25, scaleY - 18, 6, 0, Math.PI * 2);
-    ctx.stroke();
 
     // Verdict plaque
     ctx.fillStyle = "rgba(30, 20, 15, 0.95)";
