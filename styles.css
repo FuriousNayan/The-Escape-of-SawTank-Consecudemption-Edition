@@ -201,6 +201,32 @@ canvas#gameCanvas {
   transform: scale(1);
 }
 
+/* Emphasis words: red + "slap" impact animation */
+.dialogue-word.dialogue-emphasis {
+  color: #ff1a1a;
+  font-weight: 900;
+  text-shadow: 0 0 12px rgba(255, 40, 40, 0.8), 0 2px 4px rgba(0, 0, 0, 0.5);
+  animation: dialogue-slap 0.5s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+  transform-origin: left center;
+}
+
+@keyframes dialogue-slap {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.7;
+  }
+  40% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.97);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .dialogue-continue {
   font-size: 0.9rem;
   opacity: 0.7;
