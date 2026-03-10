@@ -82,6 +82,157 @@
 
   const statusEl = document.getElementById("statusText");
 
+  // --- Dialogue System (Red = Big Philly) -------------------------------------
+  // Lines from when Andy first came to Shawshank — first night, betting, and debts
+  const RED_LINES_ANDY_ARRIVAL = [
+    "Smokes or coins, bettor's choice. That's how we do it when the new fish come in.",
+    "Most new fish come close to madness the first night. Somebody always breaks down crying. Happens every time.",
+    "The only question is, who's it gonna be? It's as good a thing to bet on as any, I guess.",
+    "I had my money on Andy Dufresne. A tall drink of water with a silver spoon up his ass.",
+    "I didn't think much of Andy the first time I laid eyes on him. Looked like a stiff breeze would blow him over. That was my first impression of the man.",
+    "The first night's the toughest, no doubt about it. They march you in naked as the day you were born, skin burning and half blind from that delousing shit they throw on you.",
+    "When they put you in that cell, when those bars slam home, that's when you know it's for real. A whole life blown away in the blink of an eye.",
+    "Nothing left but all the time in the world to think about it. I remember my first night. Seems like a long time ago.",
+    "All right, who's your horse? You pick yours, I'll pick mine. Debts get paid one way or another.",
+  ];
+
+  const dialogueBox = document.getElementById("dialogueBox");
+  const dialogueSpeaker = document.getElementById("dialogueSpeaker");
+  const dialogueText = document.getElementById("dialogueText");
+  const dialogueContinue = document.getElementById("dialogueContinue");
+
+  let dialogueState = {
+    visible: false,
+    queue: [],
+    onClose: null,
+    typewriterId: null,
+    isTyping: false,
+    currentLineText: "",
+  };
+
+  const TYPEWRITER_SPEED = 40; // ms per character
+
+  function showDialogue(speaker, text, effects = {}) {
+    if (!dialogueBox || !dialogueSpeaker || !dialogueText) return;
+
+    // Cancel any in-progress typewriter
+    if (dialogueState.typewriterId) {
+      clearInterval(dialogueState.typewriterId);
+      dialogueState.typewriterId = null;
+    }
+
+    dialogueState.currentLineText = text;
+    dialogueSpeaker.textContent = speaker;
+    dialogueBox.classList.add("visible");
+    dialogueBox.setAttribute("aria-hidden", "false");
+    dialogueState.visible = true;
+    dialogueState.isTyping = true;
+    applyDialogueEffects(true, effects);
+
+    dialogueText.innerHTML = "";
+
+    const tokens = text.split(/(\s+)/);
+    let tokenIdx = 0;
+    let charIdx = 0;
+
+    function tick() {
+      if (tokenIdx >= tokens.length) {
+        clearInterval(dialogueState.typewriterId);
+        dialogueState.typewriterId = null;
+        dialogueState.isTyping = false;
+        return;
+      }
+
+      const token = tokens[tokenIdx];
+      const isWord = /\S/.test(token);
+
+      if (isWord) {
+        if (charIdx === 0) {
+          const span = document.createElement("span");
+          span.className = "dialogue-word typing";
+          span.textContent = "";
+          dialogueText.appendChild(span);
+          dialogueState.currentWordSpan = span;
+        }
+        dialogueState.currentWordSpan.textContent += token[charIdx];
+        charIdx++;
+        if (charIdx >= token.length) {
+          dialogueState.currentWordSpan.classList.remove("typing");
+          dialogueState.currentWordSpan.classList.add("complete");
+          tokenIdx++;
+          charIdx = 0;
+        }
+      } else {
+        dialogueText.appendChild(document.createTextNode(token));
+        tokenIdx++;
+      }
+    }
+
+    dialogueState.typewriterId = setInterval(tick, TYPEWRITER_SPEED);
+  }
+
+  function completeTypewriter() {
+    if (!dialogueState.isTyping || !dialogueText) return false;
+    if (dialogueState.typewriterId) {
+      clearInterval(dialogueState.typewriterId);
+      dialogueState.typewriterId = null;
+    }
+    dialogueState.isTyping = false;
+    dialogueText.textContent = dialogueState.currentLineText;
+    return true;
+  }
+
+  function hideDialogue() {
+    if (!dialogueBox) return;
+    dialogueBox.classList.remove("visible");
+    dialogueBox.setAttribute("aria-hidden", "true");
+    dialogueState.visible = false;
+    applyDialogueEffects(false);
+    if (dialogueState.onClose) {
+      dialogueState.onClose();
+      dialogueState.onClose = null;
+    }
+  }
+
+  function applyDialogueEffects(active, effects = {}) {
+    // Dynamic game state when someone speaks
+    document.body.classList.toggle("dialogue-active", active);
+    if (statusEl) {
+      statusEl.textContent = active ? "Listen..." : "Find the exit.";
+    }
+  }
+
+  function isDialogueVisible() {
+    return dialogueState.visible;
+  }
+
+  function startRedDialogue() {
+    if (dialogueState.visible || dialogueState.queue.length > 0) return;
+    dialogueState.queue = [...RED_LINES_ANDY_ARRIVAL];
+    advanceDialogue();
+  }
+
+  function advanceDialogue() {
+    if (dialogueState.queue.length === 0) {
+      hideDialogue();
+      return;
+    }
+    const line = dialogueState.queue.shift();
+    showDialogue("Red", line);
+  }
+
+  // SPACE to advance/close dialogue (or skip typewriter)
+  window.addEventListener("keydown", (e) => {
+    if (e.key === " " && dialogueState.visible) {
+      e.preventDefault();
+      if (dialogueState.isTyping) {
+        completeTypewriter();
+      } else {
+        advanceDialogue();
+      }
+    }
+  });
+
   // --- Player ----------------------------------------------------------------
 
   const player = {
@@ -190,6 +341,7 @@
 
   function stepPlayer(dt) {
     if (escaped) return;
+    if (isDialogueVisible()) return; // Pause movement during dialogue
 
     let moveForward = 0;
     let rotateDir = 0;
@@ -432,6 +584,7 @@
   // --- Kick things off -------------------------------------------------------
 
   if (statusEl) statusEl.textContent = "Find the glowing exit tile.";
+  startRedDialogue(); // Red speaks when the game first starts
   requestAnimationFrame(update);
 })();
 
