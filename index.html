@@ -15,6 +15,18 @@
       </header>
       <main class="game-shell">
         <canvas id="gameCanvas" width="960" height="540"></canvas>
+        <div id="dialogueBox" class="dialogue-box" aria-hidden="true">
+          <div class="dialogue-left">
+            <div class="dialogue-portrait">
+              <img id="dialoguePortrait" src="images/bigphilly.png" alt="" />
+            </div>
+            <div class="dialogue-speaker" id="dialogueSpeaker">Red</div>
+          </div>
+          <div class="dialogue-right">
+            <p class="dialogue-text" id="dialogueText"></p>
+            <span class="dialogue-continue" id="dialogueContinue">Press SPACE to continue</span>
+          </div>
+        </div>
       </main>
     </div>
 

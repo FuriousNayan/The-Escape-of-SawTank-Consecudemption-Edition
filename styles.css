@@ -55,7 +55,23 @@ body {
   opacity: 0.9;
 }
 
+.game-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  border-radius: 12px;
+}
+
+body.dialogue-active .game-shell::after {
+  opacity: 1;
+}
+
 .game-shell {
+  position: relative;
   flex: 1;
   min-height: 0;
   background: radial-gradient(circle at top left, #14182f, #040612 65%);
@@ -76,5 +92,118 @@ canvas#gameCanvas {
   border-radius: 8px;
   background: #102414;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+/* Dialogue box - slides up from bottom */
+.dialogue-box {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 28px;
+  padding: 28px 32px 36px;
+  background: linear-gradient(to top, rgba(12, 14, 28, 0.97), rgba(8, 10, 22, 0.95));
+  border-top: 2px solid rgba(255, 255, 255, 0.15);
+  color: #e8e6e3;
+  font-family: "Georgia", "Times New Roman", serif;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.35s ease-out, opacity 0.25s ease;
+  pointer-events: none;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.dialogue-box.visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Left: diamond portrait + name bar */
+.dialogue-left {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Diamond shape for speaker portrait */
+.dialogue-portrait {
+  width: 110px;
+  height: 110px;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.dialogue-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scale(0.75);
+}
+
+/* Name bar underneath diamond */
+.dialogue-speaker {
+  width: 95px;
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #c62828;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Right: dialogue text bars */
+.dialogue-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+}
+
+.dialogue-text {
+  flex: 1;
+  font-size: 1.4rem;
+  line-height: 1.6;
+  margin: 0;
+  padding: 18px 22px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.3);
+  min-height: 3.2em;
+}
+
+/* Each word: starts big while typing, shrinks to normal when complete */
+/* Scale-only avoids layout reflow and jitter (scale doesn't affect document flow) */
+.dialogue-word {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  transform-origin: left center;
+  vertical-align: baseline;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.dialogue-word.typing {
+  transform: scale(1.2);
+}
+
+.dialogue-word.complete {
+  transform: scale(1);
+}
+
+.dialogue-continue {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  font-style: italic;
 }
 
