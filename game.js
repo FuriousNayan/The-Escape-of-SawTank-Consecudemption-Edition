@@ -19,16 +19,16 @@
   // --- Assets ----------------------------------------------------------------
 
   const floorImage = new Image();
-  floorImage.src = "grass.png";
+  floorImage.src = "images/grass.png";
 
   const tankImage = new Image();
-  tankImage.src = "SawTank-Sheet-export.png";
+  tankImage.src = "images/SawTank-Sheet-export.png";
 
   const bigPhillyImage = new Image();
-  bigPhillyImage.src = "bigphilly.png";
+  bigPhillyImage.src = "images/bigphilly.png";
 
   const barsImage = new Image();
-  barsImage.src = "bars.png";
+  barsImage.src = "images/bars.png";
 
   let floorLoaded = false;
   let tankLoaded = false;
