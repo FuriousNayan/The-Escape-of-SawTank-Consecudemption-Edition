@@ -6,7 +6,7 @@
  *   Dialogue.visible()
  *   Dialogue.hide()
  *
- * entries: [{ speaker, text, portrait }]
+ * entries: [{ speaker, text, portrait, thought? }]
  * portrait: image path (e.g. "images/bigphilly.png") or short name (e.g. "bigphilly" -> "images/bigphilly.png")
  */
 (function () {
@@ -27,6 +27,18 @@
 
   const TYPEWRITER_SPEED = 40;
 
+  /** Phil audio: play phil_full whenever Red (Big Philly) speaks. */
+  const philFullAudio = new Audio("sounds/phil_full.mp3");
+
+  /** Returns true if the current speaker is Red (Big Philly). */
+  function isRedSpeaking(speaker, portrait) {
+    const s = String(speaker || "").toLowerCase();
+    if (s === "red") return true;
+    if (!portrait) return false;
+    const p = String(portrait).toLowerCase();
+    return p === "bigphilly" || p === "images/bigphilly.png";
+  }
+
   /** Words that get the "slap" emphasis effect (red, punchy animation). Case-insensitive. */
   const EMPHASIS_WORDS = ["guilty", "murder", "life", "death", "sentence"];
 
@@ -36,23 +48,36 @@
     return "images/" + portrait + ".png";
   }
 
-  function show(speaker, text, portrait) {
+  function stopPhilAudio() {
+    philFullAudio.pause();
+    philFullAudio.currentTime = 0;
+  }
+
+  function show(speaker, text, portrait, thought) {
     if (!dialogueBox || !dialogueSpeaker || !dialogueText) return;
+    stopPhilAudio(); // Cut Red's audio when speaker changes
     if (state.typewriterId) {
       clearInterval(state.typewriterId);
       state.typewriterId = null;
     }
     state.currentLineText = text;
-    dialogueSpeaker.textContent = speaker || "";
+    state.currentRedLine = isRedSpeaking(speaker, portrait) && !thought;
+    const speakerLabel = thought ? (speaker ? speaker + " (thinking)" : "(thinking)") : (speaker || "");
+    dialogueSpeaker.textContent = speakerLabel;
     dialogueSpeaker.dataset.speaker = (speaker || "").toLowerCase();
+    dialogueSpeaker.dataset.thought = thought ? "1" : "0";
     if (dialoguePortrait) dialoguePortrait.src = portraitPath(portrait);
     dialogueBox.classList.add("visible");
     dialogueBox.setAttribute("aria-hidden", "false");
     state.visible = true;
     state.isTyping = true;
     document.body.classList.toggle("dialogue-active", true);
-    if (statusEl) statusEl.textContent = "Listen...";
+    if (statusEl) statusEl.textContent = thought ? "Read..." : "Listen...";
     dialogueText.innerHTML = "";
+    if (state.currentRedLine) {
+      philFullAudio.currentTime = 0;
+      philFullAudio.play().catch(() => {});
+    }
 
     const tokens = text.split(/(\s+)/);
     let tokenIdx = 0;
@@ -133,6 +158,7 @@
 
   function hide() {
     if (!dialogueBox) return;
+    stopPhilAudio(); // Cut Red's audio when dialogue closes
     dialogueBox.classList.remove("visible");
     dialogueBox.setAttribute("aria-hidden", "true");
     state.visible = false;
@@ -149,7 +175,7 @@
       return;
     }
     const entry = state.queue.shift();
-    show(entry.speaker, entry.text, entry.portrait);
+    show(entry.speaker, entry.text, entry.portrait, entry.thought);
   }
 
   function start(entries, options) {
