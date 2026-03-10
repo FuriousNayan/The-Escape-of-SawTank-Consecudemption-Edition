@@ -179,16 +179,16 @@
     ctx.fillStyle = benchGrad;
     ctx.fillRect(0, h * 0.15, w, h * 0.15);
 
-    // Jury box (left side)
+    // Jury box (left side) - below judge bar / verdict plaque
     ctx.fillStyle = "rgba(60, 40, 25, 0.6)";
-    ctx.fillRect(w * 0.02, h * 0.4, w * 0.2, h * 0.42);
+    ctx.fillRect(w * 0.02, h * 0.54, w * 0.2, h * 0.38);
     ctx.strokeStyle = "#3d2817";
     ctx.lineWidth = 3;
-    ctx.strokeRect(w * 0.02, h * 0.4, w * 0.2, h * 0.42);
+    ctx.strokeRect(w * 0.02, h * 0.54, w * 0.2, h * 0.38);
     ctx.fillStyle = "#8b7355";
     ctx.font = "14px Georgia";
     ctx.textAlign = "center";
-    ctx.fillText("JURY", w * 0.12, h * 0.43);
+    ctx.fillText("JURY", w * 0.12, h * 0.57);
 
     // Prosecutor table (right side)
     ctx.fillStyle = "rgba(60, 40, 25, 0.5)";
