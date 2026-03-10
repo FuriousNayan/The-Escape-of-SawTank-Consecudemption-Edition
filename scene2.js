@@ -305,8 +305,8 @@
         { speaker: "Heywood", text: "Aw, boohshi. I'll call that action. You out some smokes, son, let me tell you!", portrait: "heywood" },
         { speaker: "Floyd", text: "Well, Heywood, you so smart, you call it!", portrait: "heywood" },
         { speaker: "Heywood", text: "I'll take the chubby fat-bah there. Fifth from the front. Put me down for a quarter deck.", portrait: "heywood" },
-        { speaker: "Red", text: "I had my money on Andy Dufresne. A tall drink of water with a silver spoon up his ass.", portrait: "bigphilly", thought: true },
-        { speaker: "Red", text: "I didn't think much of Andy the first time I laid eyes on him. Looked like a stiff breeze would blow him over.", portrait: "bigphilly", thought: true },
+        { speaker: "Red", text: "I had my money on Saw Tank. A tall drink of water with a silver spoon up his ass.", portrait: "bigphilly", thought: true },
+        { speaker: "Red", text: "I didn't think much of Saw the first time I laid eyes on him. Looked like a stiff breeze would blow him over.", portrait: "bigphilly", thought: true },
         { speaker: "Red", text: "The first night's the toughest, no doubt about it. When those bars slam home, that's when you know it's for real.", portrait: "bigphilly", thought: true },
         { speaker: "Red", text: "A whole life blown away in the blink of an eye. I remember my first night. Seems like a long time ago.", portrait: "bigphilly", thought: true },
       ];

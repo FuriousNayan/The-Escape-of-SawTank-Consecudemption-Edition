@@ -37,7 +37,7 @@
     if (window.Dialogue) {
       const script = [
         { speaker: "Judge Christopher", text: "Verdict: Guilty. Murder in the first degree.", portrait: "chrisotfer" },
-        { speaker: "Judge Christopher", text: "Andy Dufresne — two life sentences at Shawshank State Prison.", portrait: "chrisotfer" },
+        { speaker: "Judge Christopher", text: "Saw-Tank — two life sentences at Shawshank State Prison.", portrait: "chrisotfer" },
       ];
       window.Dialogue.start(script);
     }
