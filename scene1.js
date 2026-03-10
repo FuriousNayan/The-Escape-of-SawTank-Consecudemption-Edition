@@ -204,6 +204,13 @@
     ctx.lineWidth = 4;
     ctx.strokeRect(w * 0.25, h * 0.62, w * 0.5, h * 0.25);
 
+    // Verdict plaque
+    ctx.fillStyle = "rgba(30, 20, 15, 0.95)";
+    ctx.fillRect(w * 0.15, h * 0.32, w * 0.7, h * 0.18);
+    ctx.strokeStyle = "#5c4033";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(w * 0.15, h * 0.32, w * 0.7, h * 0.18);
+
     // Judge
     drawJudge();
 

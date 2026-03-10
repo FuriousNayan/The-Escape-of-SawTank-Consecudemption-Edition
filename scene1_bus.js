@@ -3,9 +3,10 @@
  */
 (function () {
   let canvas, ctx;
-  let tankImage, barsImage, dirtImage;
+  let tankImage, barsImage, grassImage, dirtImage;
   let tankLoaded = false;
   let barsLoaded = false;
+  let grassLoaded = false;
   let dirtLoaded = false;
   let elapsed = 0;
 
@@ -34,7 +35,7 @@
   };
   const TANK_ENTRY_Y = H * 0.72;
   const TANK_ENTRY_SPEED = 35;
-  const TANK_ARRIVAL_Y = H * 0.25;
+  const TANK_ARRIVAL_Y = H * 0.32;
   let inputUp = false;
 
   function init(options) {
@@ -59,6 +60,10 @@
     barsImage = new Image();
     barsImage.src = "images/bars.png";
     barsImage.onload = () => (barsLoaded = true);
+
+    grassImage = new Image();
+    grassImage.src = "images/grass.png";
+    grassImage.onload = () => (grassLoaded = true);
 
     dirtImage = new Image();
     dirtImage.src = "images/Dirt.png";
@@ -155,6 +160,11 @@
   }
 
   function drawPrisonGate() {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, DIRT_START_Y);
+    ctx.clip();
+
     const gateY = H * 0.18;
     const gateH = H * 0.35;
     const openingW = 140;
@@ -209,6 +219,8 @@
     ctx.fillRect(openingX - 8, openingY - 4, openingW + 16, 6);
     ctx.fillStyle = "#3d2817";
     ctx.fillRect(openingX - 10, openingY - 6, openingW + 20, 8);
+
+    ctx.restore();
   }
 
   function drawRoad() {
@@ -247,10 +259,14 @@
     drawTankAt(tank.x, tank.y);
   }
 
-  const DIRT_START_Y = H * 0.65;
+  const DIRT_START_Y = H * 0.48;
 
   function drawOutside() {
     const tileSize = 48;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, DIRT_START_Y);
+    ctx.clip();
     if (barsLoaded) {
       const cols = Math.ceil(W / tileSize) + 1;
       const barRows = Math.ceil(DIRT_START_Y / tileSize);
@@ -267,22 +283,50 @@
       ctx.fillStyle = "#1a1a1a";
       ctx.fillRect(0, 0, W, DIRT_START_Y);
     }
-    if (dirtLoaded) {
+    ctx.restore();
+    if (grassLoaded) {
       const cols = Math.ceil(W / tileSize) + 1;
       const rows = Math.ceil((H - DIRT_START_Y) / tileSize) + 1;
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
           ctx.drawImage(
-            dirtImage,
-            0, 0, dirtImage.width, dirtImage.height,
+            grassImage,
+            0, 0, grassImage.width, grassImage.height,
             x * tileSize, DIRT_START_Y + y * tileSize,
             tileSize, tileSize
           );
         }
       }
     } else {
-      ctx.fillStyle = "#5c4033";
+      ctx.fillStyle = "#2d4a2d";
       ctx.fillRect(0, DIRT_START_Y, W, H - DIRT_START_Y);
+    }
+  }
+
+  function drawDirtPath() {
+    const pathW = 140;
+    const pathX = W / 2 - pathW / 2 - 48 + 24;
+    const pathY = DIRT_START_Y;
+    const pathH = H - DIRT_START_Y;
+    const tileSize = 48;
+
+    if (dirtLoaded) {
+      const cols = Math.ceil(pathW / tileSize) + 1;
+      const rows = Math.ceil(pathH / tileSize) + 1;
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const tx = pathX + x * tileSize;
+          const ty = pathY + y * tileSize;
+          ctx.drawImage(
+            dirtImage,
+            0, 0, dirtImage.width, dirtImage.height,
+            tx, ty, tileSize, tileSize
+          );
+        }
+      }
+    } else {
+      ctx.fillStyle = "#5c4033";
+      ctx.fillRect(pathX, pathY, pathW, pathH);
     }
   }
 
@@ -290,10 +334,8 @@
     if (!ctx || !canvas) return;
 
     drawOutside();
+    drawDirtPath();
     drawRoad();
-    if (phase === PHASE_WALK_IN) {
-      drawPrisonGate();
-    }
 
     if (phase === PHASE_DROP_OFF && elapsed > 0.3) {
       const alpha = Math.min((elapsed - 0.3) / 0.4, 1);
@@ -305,6 +347,8 @@
     } else if (phase === PHASE_WALK_IN) {
       drawTank();
     }
+
+    drawPrisonGate();
 
     if (phase === PHASE_BUS_ARRIVE || phase === PHASE_DROP_OFF || phase === PHASE_BUS_LEAVE) {
       drawBus(busX, H * 0.72);

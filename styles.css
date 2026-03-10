@@ -84,6 +84,34 @@ body.dialogue-active .game-shell::after {
   justify-content: center;
 }
 
+/* VCR overlay - scanlines + flicker on top of the canvas */
+.vcr-overlay {
+  position: absolute;
+  inset: 8px;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 10;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.18) 2px,
+    rgba(0, 0, 0, 0.18) 4px
+  );
+  animation: vcr-flicker 0.1s infinite;
+  mix-blend-mode: multiply;
+}
+
+@keyframes vcr-flicker {
+  0%   { opacity: 1; }
+  92%  { opacity: 1; }
+  93%  { opacity: 0.88; }
+  94%  { opacity: 1; }
+  97%  { opacity: 1; }
+  98%  { opacity: 0.82; }
+  100% { opacity: 1; }
+}
+
 canvas#gameCanvas {
   display: block;
   width: 100%;
