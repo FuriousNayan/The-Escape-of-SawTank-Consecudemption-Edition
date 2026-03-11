@@ -83,6 +83,6 @@
   goToScene("play");
   requestAnimationFrame(loop);
 
-  // Expose for switching scenes (e.g. from scene 1: goToScene("scene2"))
+  // Expose for switching scenes (e.g. from scene 1: goToScene("scene2"), from scene 2: goToScene("scene3"))
   window.goToScene = goToScene;
 })();

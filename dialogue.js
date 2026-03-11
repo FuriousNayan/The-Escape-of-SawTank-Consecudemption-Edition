@@ -194,6 +194,7 @@
     dialogueBox.classList.remove("visible");
     dialogueBox.setAttribute("aria-hidden", "true");
     state.visible = false;
+    state.queue = [];
     document.body.classList.toggle("dialogue-active", false);
     if (state.onComplete) {
       state.onComplete();
@@ -218,7 +219,7 @@
   }
 
   window.addEventListener("keydown", (e) => {
-    if (e.key !== " " || !state.visible) return;
+    if ((e.key !== " " && e.key !== "Enter") || !state.visible) return;
     e.preventDefault();
     if (state.isTyping) completeTypewriter();
     else advance();

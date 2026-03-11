@@ -1,372 +1,365 @@
 /**
- * Scene 2 - Prison Escape (main game)
+ * Scene 2 - Bus cutscene. Bus drops SawTank off, player slowly moves up into the prison.
  */
 (function () {
-  function init(options) {
-    const canvas = options.canvas;
-    const ctx = options.ctx;
+  let canvas, ctx;
+  let tankImage, barsImage, grassImage, dirtImage;
+  let tankLoaded = false;
+  let barsLoaded = false;
+  let grassLoaded = false;
+  let dirtLoaded = false;
+  let elapsed = 0;
 
+  const W = 960;
+  const H = 540;
+
+  // Cutscene phases
+  const PHASE_BUS_ARRIVE = 0;
+  const PHASE_DROP_OFF = 1;
+  const PHASE_BUS_LEAVE = 2;
+  const PHASE_WALK_IN = 3;
+
+  let phase = PHASE_BUS_ARRIVE;
+  let busX = W + 120;
+  const BUS_STOP_X = W * 0.55;
+  const BUS_ARRIVE_DURATION = 2.5;
+  const DROP_OFF_DURATION = 1.2;
+  const BUS_LEAVE_SPEED = 180;
+
+  const tank = {
+    x: 0,
+    y: H + 60,
+    angle: -Math.PI / 2,
+    frame: 0,
+    frameTimer: 0,
+  };
+  const TANK_ENTRY_Y = H * 0.72;
+  const TANK_ENTRY_SPEED = 35;
+  const TANK_ARRIVAL_Y = H * 0.32;
+  let inputUp = false;
+
+  function init(options) {
+    canvas = options.canvas;
+    ctx = options.ctx;
     if (!ctx) return;
 
     ctx.imageSmoothingEnabled = true;
+    elapsed = 0;
+    phase = PHASE_BUS_ARRIVE;
+    busX = W + 120;
+    tank.x = 0;
+    tank.y = H + 60;
+    tank.frame = 0;
+    tank.frameTimer = 0;
+    inputUp = false;
 
-    // --- Config ----------------------------------------------------------------
-    const ROOM_COLS = 20;
-    const ROOM_ROWS = 11;
-    const TILE_SIZE = 48;
-    const PLAYER_SPEED = 130;
-    const PLAYER_ROTATE_SPEED = Math.PI * 1.4;
-
-    // --- Assets ----------------------------------------------------------------
-    const floorImage = new Image();
-    floorImage.src = "images/Dirt.png";
-    const tankImage = new Image();
+    tankImage = new Image();
     tankImage.src = "images/SawTank-Sheet-export.png";
-    const bigPhillyImage = new Image();
-    bigPhillyImage.src = "images/bigphilly.png";
-    const barsImage = new Image();
-    barsImage.src = "images/bars.png";
-    const heywoodImage = new Image();
-    heywoodImage.src = "images/heywood.png";
-    const floydImage = new Image();
-    floydImage.src = "images/Mr-Gardner.png";
-
-    let floorLoaded = false;
-    let tankLoaded = false;
-    let bigPhillyLoaded = false;
-    let barsLoaded = false;
-    let heywoodLoaded = false;
-    let floydLoaded = false;
-
-    floorImage.onload = () => (floorLoaded = true);
     tankImage.onload = () => (tankLoaded = true);
-    bigPhillyImage.onload = () => (bigPhillyLoaded = true);
+
+    barsImage = new Image();
+    barsImage.src = "images/bars.png";
     barsImage.onload = () => (barsLoaded = true);
-    heywoodImage.onload = () => (heywoodLoaded = true);
-    floydImage.onload = () => (floydLoaded = true);
 
-    // --- Room Layout -----------------------------------------------------------
-    const TILES = { FLOOR: 0, WALL: 1, EXIT: 2 };
-    const EXIT_TILE_POS = { x: 18, y: 1 };
-    const BIG_PHILLY_POS = { x: 1.8, y: 1.8 };
-    const HEYWOOD_POS = { x: 3.5, y: 1.8 };
-    const FLOYD_POS = { x: 5.2, y: 1.8 };
+    grassImage = new Image();
+    grassImage.src = "images/grass.png";
+    grassImage.onload = () => (grassLoaded = true);
 
-    const room = Array.from({ length: ROOM_ROWS }, (_, y) =>
-      Array.from({ length: ROOM_COLS }, (_, x) => {
-        const isBorder =
-          y === 0 || y === ROOM_ROWS - 1 || x === 0 || x === ROOM_COLS - 1;
-        return isBorder ? TILES.WALL : TILES.FLOOR;
-      })
-    );
-    // Winding path of prison bars: single linear route to exit (top right)
-    // Fill the right half with walls, then carve the path
-    for (let y = 1; y <= 9; y += 1) {
-      for (let x = 9; x <= 18; x += 1) {
-        room[y][x] = TILES.WALL;
-      }
-    }
-    // Carve winding path: from spawn area to exit (18,1)
-    const PATH = [
-      [10,9],[11,9],[12,9],[10,8],[10,7],[10,6],  // clear blocks in front, up to path
-      [11,6],[12,6],                       // right
-      [12,5],[12,4],                       // up
-      [13,4],[14,4],[15,4],[16,4],         // right
-      [16,3],[16,2],                       // up
-      [17,2],[17,1],[18,1],                // right to exit
-    ];
-    for (const [px, py] of PATH) {
-      room[py][px] = (px === 18 && py === 1) ? TILES.EXIT : TILES.FLOOR;
-    }
-
-    const statusEl = document.getElementById("statusText");
-
-    // --- Player ----------------------------------------------------------------
-    const player = {
-      x: 10.5 * TILE_SIZE,
-      y: 9.5 * TILE_SIZE,
-      angle: -Math.PI / 2,
-      frame: 0,
-      frameTimer: 0,
-      isMoving: false,
-    };
-
-    const PLAYER_ANIM_FRAME_DURATION = 0.16;
-    const PLAYER_COLLISION_RADIUS = 18;
-    const trailMarks = [];
-    const TRAIL_MARK_INTERVAL = 12;
-    const TRAIL_MARK_LIFETIME = 1.8;
-    let lastTrailX = player.x;
-    let lastTrailY = player.y;
-
-    // --- Input -----------------------------------------------------------------
-    const input = { up: false, down: false, left: false, right: false };
-    const KEY_MAP = {
-      ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
-      w: "up", s: "down", a: "left", d: "right",
-      W: "up", S: "down", A: "left", D: "right",
-    };
+    dirtImage = new Image();
+    dirtImage.src = "images/Dirt.png";
+    dirtImage.onload = () => (dirtLoaded = true);
 
     const keyHandler = (e, down) => {
-      const action = KEY_MAP[e.key];
-      if (!action) return;
-      input[action] = down;
-      e.preventDefault();
+      if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
+        inputUp = down;
+        e.preventDefault();
+      }
     };
     window.addEventListener("keydown", (e) => keyHandler(e, true));
     window.addEventListener("keyup", (e) => keyHandler(e, false));
-
-    // --- Helpers ---------------------------------------------------------------
-    function tileAtPixel(px, py) {
-      const tx = Math.floor(px / TILE_SIZE);
-      const ty = Math.floor(py / TILE_SIZE);
-      if (tx < 0 || ty < 0 || tx >= ROOM_COLS || ty >= ROOM_ROWS) return TILES.WALL;
-      return room[ty][tx];
-    }
-
-    function isSolidTile(tile) {
-      return tile === TILES.WALL;
-    }
-
-    function reachedExit() {
-      const exitCenterX = (EXIT_TILE_POS.x + 0.5) * TILE_SIZE;
-      const exitCenterY = (EXIT_TILE_POS.y + 0.5) * TILE_SIZE;
-      const dx = player.x - exitCenterX;
-      const dy = player.y - exitCenterY;
-      return Math.hypot(dx, dy) < TILE_SIZE * 0.6;
-    }
-
-    let escaped = false;
-
-    function stepPlayer(dt) {
-      if (escaped) return;
-      if (window.Dialogue?.visible?.()) return;
-      let moveForward = 0;
-      let rotateDir = 0;
-      if (input.up) moveForward += 1;
-      if (input.down) moveForward -= 1;
-      if (input.left) rotateDir -= 1;
-      if (input.right) rotateDir += 1;
-      player.isMoving = moveForward !== 0;
-      if (rotateDir !== 0) player.angle += rotateDir * PLAYER_ROTATE_SPEED * dt;
-      if (!player.isMoving) return;
-      const distance = PLAYER_SPEED * dt * Math.sign(moveForward);
-      const dx = Math.cos(player.angle) * distance;
-      const dy = Math.sin(player.angle) * distance;
-      const nextX = player.x + dx;
-      const nextY = player.y + dy;
-      const samplePoints = [
-        [nextX, nextY],
-        [nextX + PLAYER_COLLISION_RADIUS, nextY],
-        [nextX - PLAYER_COLLISION_RADIUS, nextY],
-        [nextX, nextY + PLAYER_COLLISION_RADIUS],
-        [nextX, nextY - PLAYER_COLLISION_RADIUS],
-      ];
-      let blocked = false;
-      for (const [sx, sy] of samplePoints) {
-        if (isSolidTile(tileAtPixel(sx, sy))) {
-          blocked = true;
-          break;
-        }
-      }
-      if (!blocked) {
-        player.x = nextX;
-        player.y = nextY;
-        const dist = Math.hypot(player.x - lastTrailX, player.y - lastTrailY);
-        if (dist >= TRAIL_MARK_INTERVAL) {
-          const perpX = -Math.sin(player.angle);
-          const perpY = Math.cos(player.angle);
-          const offset = 10;
-          const now = performance.now();
-          trailMarks.push({ x: player.x + perpX * offset, y: player.y + perpY * offset, angle: player.angle, t: now });
-          trailMarks.push({ x: player.x - perpX * offset, y: player.y - perpY * offset, angle: player.angle, t: now });
-          lastTrailX = player.x;
-          lastTrailY = player.y;
-        }
-      }
-      if (!escaped && reachedExit()) {
-        escaped = true;
-        if (statusEl) statusEl.textContent = "You escaped this block. Nice work, SawTank.";
-      }
-    }
-
-    function updateTrailMarks(now) {
-      const cutoff = now - TRAIL_MARK_LIFETIME * 1000;
-      while (trailMarks.length > 0 && trailMarks[0].t < cutoff) trailMarks.shift();
-    }
-
-    function updateAnimation(dt) {
-      if (!tankLoaded) return;
-      player.frameTimer += dt;
-      if (player.frameTimer >= PLAYER_ANIM_FRAME_DURATION) {
-        player.frameTimer -= PLAYER_ANIM_FRAME_DURATION;
-        player.frame = (player.frame + 1) % 2;
-      }
-    }
-
-    function drawTrailMarks(now) {
-      const markW = 14;
-      const markH = 6;
-      for (const m of trailMarks) {
-        const age = (now - m.t) / 1000;
-        const life = 1 - age / TRAIL_MARK_LIFETIME;
-        if (life <= 0) continue;
-        ctx.save();
-        ctx.translate(m.x, m.y);
-        ctx.rotate(m.angle);
-        ctx.globalAlpha = life * 0.5;
-        ctx.fillStyle = "#0a0f0a";
-        ctx.fillRect(-markW / 2, -markH / 2, markW, markH);
-        ctx.restore();
-      }
-    }
-
-    function drawFloor() {
-      for (let y = 0; y < ROOM_ROWS; y += 1) {
-        for (let x = 0; x < ROOM_COLS; x += 1) {
-          const px = x * TILE_SIZE;
-          const py = y * TILE_SIZE;
-          if (floorLoaded) {
-            ctx.drawImage(floorImage, 0, 0, floorImage.width, floorImage.height, px, py, TILE_SIZE, TILE_SIZE);
-          } else {
-            ctx.fillStyle = "#3d2817";
-            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-          }
-        }
-      }
-    }
-
-    function drawWallsAndExit() {
-      for (let y = 0; y < ROOM_ROWS; y += 1) {
-        for (let x = 0; x < ROOM_COLS; x += 1) {
-          const tile = room[y][x];
-          const px = x * TILE_SIZE;
-          const py = y * TILE_SIZE;
-          if (tile === TILES.WALL) {
-            if (barsLoaded) {
-              ctx.drawImage(barsImage, 0, 0, barsImage.width, barsImage.height, px, py, TILE_SIZE, TILE_SIZE);
-            } else {
-              ctx.fillStyle = "#0d1a14";
-              ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-            }
-          } else if (tile === TILES.EXIT) {
-            const grad = ctx.createLinearGradient(px, py, px, py + TILE_SIZE);
-            grad.addColorStop(0, "#3ee6a8");
-            grad.addColorStop(1, "#17835a");
-            ctx.fillStyle = grad;
-            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-            ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
-            ctx.strokeRect(px + 0.5, py + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
-          }
-        }
-      }
-    }
-
-    function drawBigPhilly() {
-      if (!bigPhillyLoaded) return;
-      const maxW = TILE_SIZE * 1.2;
-      const maxH = TILE_SIZE * 1.2;
-      const scale = Math.min(maxW / bigPhillyImage.width, maxH / bigPhillyImage.height);
-      const dw = bigPhillyImage.width * scale;
-      const dh = bigPhillyImage.height * scale;
-      ctx.drawImage(bigPhillyImage, BIG_PHILLY_POS.x * TILE_SIZE - dw / 2, BIG_PHILLY_POS.y * TILE_SIZE - dh / 2, dw, dh);
-    }
-
-    function drawHeywood() {
-      if (!heywoodLoaded) return;
-      const maxW = TILE_SIZE * 1.1;
-      const maxH = TILE_SIZE * 1.1;
-      const scale = Math.min(maxW / heywoodImage.width, maxH / heywoodImage.height);
-      const dw = heywoodImage.width * scale;
-      const dh = heywoodImage.height * scale;
-      ctx.drawImage(heywoodImage, HEYWOOD_POS.x * TILE_SIZE - dw / 2, HEYWOOD_POS.y * TILE_SIZE - dh / 2, dw, dh);
-    }
-
-    function drawFloyd() {
-      if (!floydLoaded) return;
-      const maxW = TILE_SIZE * 1.1;
-      const maxH = TILE_SIZE * 1.1;
-      const scale = Math.min(maxW / floydImage.width, maxH / floydImage.height);
-      const dw = floydImage.width * scale;
-      const dh = floydImage.height * scale;
-      ctx.drawImage(floydImage, FLOYD_POS.x * TILE_SIZE - dw / 2, FLOYD_POS.y * TILE_SIZE - dh / 2, dw, dh);
-    }
-
-    function drawPlayer() {
-      if (!tankLoaded) return;
-      const frameCount = 2;
-      const frameIndex = player.frame % frameCount;
-      const frameWidth = tankImage.width / frameCount;
-      const frameHeight = tankImage.height;
-      const sx = frameIndex * frameWidth;
-      const sy = 0;
-      const dw = frameWidth;
-      const dh = frameHeight;
-      ctx.save();
-      ctx.translate(player.x, player.y);
-      ctx.rotate(player.angle);
-      const pivotBack = dw * 0.25;
-      ctx.drawImage(tankImage, sx, sy, frameWidth, frameHeight, -dw / 2 + pivotBack, -dh / 2, dw, dh);
-      ctx.restore();
-    }
-
-    // Store scene implementation for update/render
-    window._scene2Impl = {
-      stepPlayer,
-      updateTrailMarks,
-      updateAnimation,
-      drawTrailMarks,
-      drawFloor,
-      drawWallsAndExit,
-      drawBigPhilly,
-      drawHeywood,
-      drawFloyd,
-      drawPlayer,
-      canvas,
-      ctx,
-    };
-    if (statusEl) statusEl.textContent = "Find the glowing exit tile.";
-    if (window.Dialogue) {
-      const script = [
-        { speaker: "Floyd", text: "Takin' bets today, Red?", portrait: "Mr-Gardner" },
-        { speaker: "Red", text: "Smokes or coins, bettor's choice.", portrait: "bigphilly" },
-        { speaker: "Floyd", text: "Smokes. Put me down for two. That little sack o' boohshi, eighth from the front. He'll be first.", portrait: "Mr-Gardner" },
-        { speaker: "Red", text: "All right, who's your horse?", portrait: "bigphilly" },
-        { speaker: "Heywood", text: "Aw, boohshi. I'll call that action. You out some smokes, son, let me tell you!", portrait: "heywood" },
-        { speaker: "Floyd", text: "Well, Heywood, you so smart, you call it!", portrait: "Mr-Gardner" },
-        { speaker: "Heywood", text: "I'll take the chubby fat-bah there. Fifth from the front. Put me down for a quarter deck.", portrait: "heywood" },
-        { speaker: "Red", text: "I had my money on Saw Tank. A tall drink of water with a silver spoon up his ass.", portrait: "bigphilly", thought: true },
-        { speaker: "Red", text: "I didn't think much of Saw the first time I laid eyes on him. Looked like a stiff breeze would blow him over.", portrait: "bigphilly", thought: true },
-        { speaker: "Red", text: "The first night's the toughest, no doubt about it. When those bars slam home, that's when you know it's for real.", portrait: "bigphilly", thought: true },
-        { speaker: "Red", text: "A whole life blown away in the blink of an eye. I remember my first night. Seems like a long time ago.", portrait: "bigphilly", thought: true },
-      ];
-      window.Dialogue.start(script, {
-        onComplete: () => { if (statusEl) statusEl.textContent = "Find the exit."; },
-      });
-    }
   }
 
   function update(dt) {
-    const impl = window._scene2Impl;
-    if (!impl) return;
-    const now = performance.now();
-    impl.stepPlayer(dt);
-    impl.updateAnimation(dt);
-    impl.updateTrailMarks(now);
+    elapsed += dt;
+
+    if (phase === PHASE_BUS_ARRIVE) {
+      const t = Math.min(elapsed / BUS_ARRIVE_DURATION, 1);
+      const ease = 1 - (1 - t) * (1 - t);
+      busX = W + 120 + (BUS_STOP_X - (W + 120)) * ease;
+      if (t >= 1) {
+        phase = PHASE_DROP_OFF;
+        elapsed = 0;
+      }
+    } else if (phase === PHASE_DROP_OFF) {
+      if (elapsed >= DROP_OFF_DURATION) {
+        phase = PHASE_BUS_LEAVE;
+        elapsed = 0;
+        tank.x = BUS_STOP_X - 55;
+        tank.y = TANK_ENTRY_Y;
+      }
+    } else if (phase === PHASE_BUS_LEAVE) {
+      busX -= BUS_LEAVE_SPEED * dt;
+      if (busX < -100) {
+        phase = PHASE_WALK_IN;
+        elapsed = 0;
+      }
+      tank.frameTimer += dt;
+      if (tank.frameTimer >= 0.16) {
+        tank.frameTimer -= 0.16;
+        tank.frame = (tank.frame + 1) % 2;
+      }
+    } else if (phase === PHASE_WALK_IN) {
+      if (inputUp && tank.y > TANK_ARRIVAL_Y) {
+        tank.y -= TANK_ENTRY_SPEED * dt;
+      }
+      if (tank.y <= TANK_ARRIVAL_Y && window.goToScene) {
+        window.goToScene("scene3");
+      }
+      tank.frameTimer += dt;
+      if (tank.frameTimer >= 0.16) {
+        tank.frameTimer -= 0.16;
+        tank.frame = (tank.frame + 1) % 2;
+      }
+    }
+  }
+
+  function drawBus(x, y) {
+    const bw = 140;
+    const bh = 70;
+    const wx = x - bw / 2;
+    const wy = y - bh / 2;
+
+    ctx.save();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(wx, wy, bw, bh);
+    ctx.strokeStyle = "#cccccc";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(wx, wy, bw, bh);
+
+    ctx.fillStyle = "#f5f5f5";
+    ctx.fillRect(wx, wy - 12, bw, 12);
+    ctx.strokeRect(wx, wy - 12, bw, 12);
+
+    for (let i = 0; i < 4; i++) {
+      const gx = wx + 18 + i * 32;
+      ctx.fillStyle = "#87ceeb";
+      ctx.fillRect(gx, wy + 12, 22, 28);
+      ctx.strokeStyle = "#2a3d32";
+      ctx.strokeRect(gx, wy + 12, 22, 28);
+    }
+
+    ctx.fillStyle = "#333";
+    ctx.beginPath();
+    ctx.arc(wx + 25, wy + bh - 8, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.arc(wx + bw - 25, wy + bh - 8, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawPrisonGate() {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, DIRT_START_Y);
+    ctx.clip();
+
+    const gateY = H * 0.18;
+    const gateH = H * 0.35;
+    const openingW = 140;
+    const openingH = 90;
+    const openingX = W / 2 - openingW / 2;
+    const openingY = gateY + gateH - openingH;
+
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, W, gateY + gateH);
+
+    if (barsLoaded) {
+      const tileSize = 48;
+      const cols = Math.ceil(W / tileSize) + 1;
+      const rows = Math.ceil(gateH / tileSize) + 1;
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const tx = x * tileSize;
+          const ty = gateY + y * tileSize;
+          if (tx + tileSize < openingX || tx > openingX + openingW ||
+              ty + tileSize < openingY || ty > openingY + openingH) {
+            ctx.drawImage(
+              barsImage,
+              0, 0, barsImage.width, barsImage.height,
+              tx, ty, tileSize, tileSize
+            );
+          }
+        }
+      }
+    } else {
+      ctx.fillStyle = "#0d1a14";
+      ctx.fillRect(0, gateY, W, gateH);
+      ctx.fillStyle = "#2a3d32";
+      const barW = 6;
+      const barGap = 10;
+      for (let bx = 0; bx < W; bx += barW + barGap) {
+        if (bx + barW < openingX || bx > openingX + openingW) {
+          ctx.fillRect(bx, gateY, barW, gateH);
+        } else {
+          ctx.fillRect(bx, gateY, barW, openingY - gateY);
+          ctx.fillRect(bx, openingY + openingH, barW, gateY + gateH - (openingY + openingH));
+        }
+      }
+    }
+
+    ctx.fillStyle = "#3d2817";
+    ctx.fillRect(0, gateY - 4, W, 6);
+    ctx.fillRect(0, gateY + gateH - 2, W, 6);
+
+    ctx.fillStyle = "#2a3d32";
+    ctx.fillRect(openingX - 8, openingY, 8, openingH);
+    ctx.fillRect(openingX + openingW, openingY, 8, openingH);
+    ctx.fillRect(openingX - 8, openingY - 4, openingW + 16, 6);
+    ctx.fillStyle = "#3d2817";
+    ctx.fillRect(openingX - 10, openingY - 6, openingW + 20, 8);
+
+    ctx.restore();
+  }
+
+  function drawRoad() {
+    const roadY = H * 0.75;
+    const roadH = H - roadY + 20;
+
+    ctx.fillStyle = "#4a4a4a";
+    ctx.fillRect(0, roadY, W, roadH);
+    ctx.fillStyle = "#666";
+    ctx.fillRect(0, roadY + roadH / 2 - 2, W, 4);
+  }
+
+  function drawTankAt(x, y) {
+    if (!tankLoaded) return;
+
+    const frameCount = 2;
+    const frameIndex = tank.frame % frameCount;
+    const frameWidth = tankImage.width / frameCount;
+    const frameHeight = tankImage.height;
+    const dw = frameWidth;
+    const dh = frameHeight;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(tank.angle);
+    const pivotBack = dw * 0.25;
+    ctx.drawImage(
+      tankImage,
+      frameIndex * frameWidth, 0, frameWidth, frameHeight,
+      -dw / 2 + pivotBack, -dh / 2, dw, dh
+    );
+    ctx.restore();
+  }
+
+  function drawTank() {
+    drawTankAt(tank.x, tank.y);
+  }
+
+  const DIRT_START_Y = H * 0.48;
+
+  function drawOutside() {
+    const tileSize = 48;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, DIRT_START_Y);
+    ctx.clip();
+    if (barsLoaded) {
+      const cols = Math.ceil(W / tileSize) + 1;
+      const barRows = Math.ceil(DIRT_START_Y / tileSize);
+      for (let y = 0; y < barRows; y++) {
+        for (let x = 0; x < cols; x++) {
+          ctx.drawImage(
+            barsImage,
+            0, 0, barsImage.width, barsImage.height,
+            x * tileSize, y * tileSize, tileSize, tileSize
+          );
+        }
+      }
+    } else {
+      ctx.fillStyle = "#1a1a1a";
+      ctx.fillRect(0, 0, W, DIRT_START_Y);
+    }
+    ctx.restore();
+    if (grassLoaded) {
+      const cols = Math.ceil(W / tileSize) + 1;
+      const rows = Math.ceil((H - DIRT_START_Y) / tileSize) + 1;
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          ctx.drawImage(
+            grassImage,
+            0, 0, grassImage.width, grassImage.height,
+            x * tileSize, DIRT_START_Y + y * tileSize,
+            tileSize, tileSize
+          );
+        }
+      }
+    } else {
+      ctx.fillStyle = "#2d4a2d";
+      ctx.fillRect(0, DIRT_START_Y, W, H - DIRT_START_Y);
+    }
+  }
+
+  function drawDirtPath() {
+    const pathW = 140;
+    const pathX = W / 2 - pathW / 2 - 48 + 24;
+    const pathY = DIRT_START_Y;
+    const pathH = H - DIRT_START_Y;
+    const tileSize = 48;
+
+    if (dirtLoaded) {
+      const cols = Math.ceil(pathW / tileSize) + 1;
+      const rows = Math.ceil(pathH / tileSize) + 1;
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const tx = pathX + x * tileSize;
+          const ty = pathY + y * tileSize;
+          ctx.drawImage(
+            dirtImage,
+            0, 0, dirtImage.width, dirtImage.height,
+            tx, ty, tileSize, tileSize
+          );
+        }
+      }
+    } else {
+      ctx.fillStyle = "#5c4033";
+      ctx.fillRect(pathX, pathY, pathW, pathH);
+    }
   }
 
   function render() {
-    const impl = window._scene2Impl;
-    if (!impl || !impl.ctx || !impl.canvas) return;
-    const now = performance.now();
-    impl.ctx.clearRect(0, 0, impl.canvas.width, impl.canvas.height);
-    impl.drawFloor();
-    impl.drawTrailMarks(now);
-    impl.drawBigPhilly();
-    impl.drawHeywood();
-    impl.drawFloyd();
-    impl.drawWallsAndExit();
-    impl.drawPlayer();
+    if (!ctx || !canvas) return;
+
+    drawOutside();
+    drawDirtPath();
+    drawRoad();
+
+    if (phase === PHASE_DROP_OFF && elapsed > 0.3) {
+      const alpha = Math.min((elapsed - 0.3) / 0.4, 1);
+      ctx.globalAlpha = alpha;
+      drawTankAt(BUS_STOP_X - 55, TANK_ENTRY_Y);
+      ctx.globalAlpha = 1;
+    } else if (phase === PHASE_BUS_LEAVE) {
+      drawTank();
+    } else if (phase === PHASE_WALK_IN) {
+      drawTank();
+    }
+
+    drawPrisonGate();
+
+    if (phase === PHASE_BUS_ARRIVE || phase === PHASE_DROP_OFF || phase === PHASE_BUS_LEAVE) {
+      drawBus(busX, H * 0.72);
+    }
+
+    if (phase === PHASE_WALK_IN) {
+      ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+      ctx.font = "14px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("Hold UP to enter the prison", W / 2, H - 24);
+    }
   }
 
   window.Scenes = window.Scenes || {};

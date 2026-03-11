@@ -98,7 +98,7 @@
     }
 
     if (player.y >= EXIT_Y && player.x >= EXIT_LEFT && player.x <= EXIT_RIGHT) {
-      window.goToScene("scene1_bus");
+      window.goToScene("scene2");
     }
 
     player.frameTimer += dt;
