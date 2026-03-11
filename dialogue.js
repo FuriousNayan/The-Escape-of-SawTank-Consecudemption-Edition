@@ -124,17 +124,19 @@
       const isWord = /\S/.test(token);
       if (isWord) {
         if (charIdx === 0) {
-          const span = document.createElement("span");
-          span.className = "dialogue-word typing";
-          span.dataset.emphasis = EMPHASIS_WORDS.includes(token.replace(/[^\w]/g, "").toLowerCase()) ? "1" : "0";
-          span.textContent = "";
-          dialogueText.appendChild(span);
-          state.currentWordSpan = span;
+          const wordSpan = document.createElement("span");
+          wordSpan.className = "dialogue-word";
+          wordSpan.dataset.emphasis = EMPHASIS_WORDS.includes(token.replace(/[^\w]/g, "").toLowerCase()) ? "1" : "0";
+          wordSpan.textContent = "";
+          dialogueText.appendChild(wordSpan);
+          state.currentWordSpan = wordSpan;
         }
-        state.currentWordSpan.textContent += token[charIdx];
+        const letterSpan = document.createElement("span");
+        letterSpan.className = "dialogue-letter";
+        letterSpan.textContent = token[charIdx];
+        state.currentWordSpan.appendChild(letterSpan);
         charIdx++;
         if (charIdx >= token.length) {
-          state.currentWordSpan.classList.remove("typing");
           state.currentWordSpan.classList.add("complete");
           if (state.currentWordSpan.dataset.emphasis === "1") {
             state.currentWordSpan.classList.add("dialogue-emphasis");
@@ -228,7 +230,6 @@
     visible: () => state.visible,
     start,
     queue: (entries) => { state.queue.push(...entries.map((e) => ({ ...e }))); },
-    /** Add or remove emphasis keywords (e.g. Dialogue.emphasisWords = ["guilty", "murder"]) */
     get emphasisWords() { return [...EMPHASIS_WORDS]; },
     set emphasisWords(words) {
       EMPHASIS_WORDS.length = 0;

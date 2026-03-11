@@ -84,6 +84,34 @@ body.dialogue-active .game-shell::after {
   justify-content: center;
 }
 
+/* VCR overlay - scanlines + flicker on top of the canvas */
+.vcr-overlay {
+  position: absolute;
+  inset: 8px;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 10;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.18) 2px,
+    rgba(0, 0, 0, 0.18) 4px
+  );
+  animation: vcr-flicker 0.1s infinite;
+  mix-blend-mode: multiply;
+}
+
+@keyframes vcr-flicker {
+  0%   { opacity: 1; }
+  92%  { opacity: 1; }
+  93%  { opacity: 0.88; }
+  94%  { opacity: 1; }
+  97%  { opacity: 1; }
+  98%  { opacity: 0.82; }
+  100% { opacity: 1; }
+}
+
 canvas#gameCanvas {
   display: block;
   width: 100%;
@@ -214,26 +242,29 @@ canvas#gameCanvas {
   min-height: 3.2em;
 }
 
-/* Each word: starts big while typing, shrinks to normal when complete */
-/* Scale-only avoids layout reflow and jitter (scale doesn't affect document flow) */
 .dialogue-word {
+  display: inline;
+}
+
+/* Letter scaling: each letter scales in as it appears */
+.dialogue-letter {
   display: inline-block;
-  transition: transform 0.3s ease;
+  animation: dialogue-letter-scale 0.25s ease-out forwards;
   transform-origin: left center;
-  vertical-align: baseline;
-  will-change: transform;
-  backface-visibility: hidden;
 }
 
-.dialogue-word.typing {
-  transform: scale(1.2);
+@keyframes dialogue-letter-scale {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-.dialogue-word.complete {
-  transform: scale(1);
-}
-
-/* Emphasis words: red + "slap" impact animation */
+/* Emphasis words: slap impact animation */
 .dialogue-word.dialogue-emphasis {
   color: #ff1a1a;
   font-weight: 900;
