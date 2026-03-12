@@ -18,6 +18,7 @@
     if (window.Dialogue?.hide) window.Dialogue.hide();
     currentSceneName = name;
     currentScene = sceneDef;
+    document.body.dataset.scene = name || "";
     sceneDef.init({ canvas, ctx });
   }
 

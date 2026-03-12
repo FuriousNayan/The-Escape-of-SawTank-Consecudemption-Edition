@@ -197,8 +197,9 @@
     state.queue = [];
     document.body.classList.toggle("dialogue-active", false);
     if (state.onComplete) {
-      state.onComplete();
+      const callback = state.onComplete;
       state.onComplete = null;
+      callback();
     }
   }
 
@@ -212,6 +213,7 @@
   }
 
   function start(entries, options) {
+    if (options?.force) hide();
     if (state.visible || state.queue.length > 0) return;
     state.queue = entries.map((e) => ({ ...e }));
     state.onComplete = options?.onComplete || null;

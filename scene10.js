@@ -9,6 +9,7 @@
   let tankLoaded = false;
   let grassLoaded = false;
   let elapsed = 0;
+  let plotTwistTriggered = false;
 
   const W = 960;
   const H = 540;
@@ -34,10 +35,10 @@
     W: "up", S: "down", A: "left", D: "right",
   };
 
-  const ANDY_ZONE_LEFT = 620;
-  const ANDY_ZONE_RIGHT = 820;
-  const ANDY_ZONE_TOP = 320;
-  const ANDY_ZONE_BOTTOM = 480;
+  const ANDY_ZONE_LEFT = 500;
+  const ANDY_ZONE_RIGHT = 900;
+  const ANDY_ZONE_TOP = 280;
+  const ANDY_ZONE_BOTTOM = 500;
 
   function init(options) {
     canvas = options.canvas;
@@ -46,6 +47,7 @@
 
     ctx.imageSmoothingEnabled = true;
     elapsed = 0;
+    plotTwistTriggered = false;
     player.x = 150;
     player.y = 420;
     player.angle = -Math.PI / 2;
@@ -112,8 +114,33 @@
       player.y = Math.max(200, Math.min(H - 60, player.y));
     }
 
-    if (inAndyZone()) {
-      if (window.goToScene) window.goToScene("play");
+    if (inAndyZone() && !plotTwistTriggered) {
+      plotTwistTriggered = true;
+      if (window.Dialogue && window.goToScene) {
+        const arrestScript = [
+          { speaker: "Saw-Tank", text: "Red. I need to tell you something. I'm not who you think I am.", portrait: "sawTank_face" },
+          { speaker: "Saw-Tank", text: "I've been undercover this whole time. Shawshank, the escape, this beach — all of it. I'm a cop.", portrait: "sawTank_face" },
+          { speaker: "Red", text: "What? No...", portrait: "bigphilly" },
+          { speaker: "Saw-Tank", text: "You're under arrest. You have the right to remain silent. Anything you say can and will be used against you.", portrait: "sawTank_face" },
+          { speaker: "Red", text: "You... you set me up. All of it.", portrait: "bigphilly", thought: true },
+          { speaker: "Saw-Tank", text: "Get busy living or get busy dying. You chose. I'm sorry.", portrait: "sawTank_face" },
+        ];
+        requestAnimationFrame(() => {
+          window.Dialogue.hide();
+          window.Dialogue.start(arrestScript, {
+            force: true,
+            onComplete: () => {
+              window.Dialogue.start(
+                [{ speaker: "Saw-Tank", text: "You need to start over again.", portrait: "sawTank_face" }],
+                { force: true }
+              );
+              setTimeout(() => window.goToScene("scene1"), 1200);
+            },
+          });
+        });
+      } else if (window.goToScene) {
+        window.goToScene("scene1");
+      }
     }
 
   }

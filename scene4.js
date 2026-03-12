@@ -10,6 +10,7 @@
   let barsLoaded = false;
   let floorLoaded = false;
   let elapsed = 0;
+  const dust = [];
 
   const W = 960;
   const H = 540;
@@ -71,6 +72,17 @@
     floorImage.src = "images/Dirt.png";
     floorImage.onload = () => (floorLoaded = true);
 
+    for (let i = 0; i < 24; i++) {
+      dust.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        speed: 12 + Math.random() * 18,
+        size: 0.8 + Math.random() * 1.5,
+        opacity: 0.03 + Math.random() * 0.05,
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
+
     const keyHandler = (e, down) => {
       const action = KEY_MAP[e.key];
       if (!action) return;
@@ -102,6 +114,13 @@
 
   function update(dt) {
     elapsed += dt;
+    for (const d of dust) {
+      d.y -= d.speed * dt;
+      if (d.y < -10) {
+        d.y = H + 5;
+        d.x = Math.random() * W;
+      }
+    }
     if (!window.goToScene) return;
     if (window.Dialogue?.visible?.()) return;
 
@@ -161,10 +180,18 @@
     const w = canvas.width;
     const h = canvas.height;
 
-    ctx.fillStyle = "#1a1a1a";
+    // Atmospheric gradient background (prison yard dusk)
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    skyGrad.addColorStop(0, "#0d1117");
+    skyGrad.addColorStop(0.25, "#151922");
+    skyGrad.addColorStop(0.5, "#1a1d24");
+    skyGrad.addColorStop(0.85, "#242018");
+    skyGrad.addColorStop(1, "#1e1a14");
+    ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, w, h);
 
     if (floorLoaded) {
+      ctx.globalAlpha = 0.85;
       const cols = Math.ceil(w / TILE_SIZE) + 1;
       const rows = Math.ceil(h / TILE_SIZE) + 1;
       for (let y = 0; y < rows; y++) {
@@ -172,32 +199,99 @@
           ctx.drawImage(floorImage, 0, 0, floorImage.width, floorImage.height, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
         }
       }
+      ctx.globalAlpha = 1;
     }
 
     if (barsLoaded) {
+      ctx.globalAlpha = 0.7;
       const barRows = 3;
       for (let y = 0; y < barRows; y++) {
         for (let x = 0; x < Math.ceil(w / TILE_SIZE) + 1; x++) {
           ctx.drawImage(barsImage, 0, 0, barsImage.width, barsImage.height, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
         }
       }
+      ctx.globalAlpha = 1;
     }
 
+    // Soft spotlight on Red's meeting area (dramatic focus)
+    const spotGrad = ctx.createRadialGradient(640, 380, 0, 640, 380, 280);
+    spotGrad.addColorStop(0, "rgba(255, 220, 180, 0.22)");
+    spotGrad.addColorStop(0.35, "rgba(255, 200, 150, 0.08)");
+    spotGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = spotGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Ambient floating dust in the yard
+    for (const d of dust) {
+      const sway = Math.sin(elapsed * 0.8 + d.phase) * 3;
+      ctx.fillStyle = `rgba(255, 235, 200, ${d.opacity * (0.6 + 0.4 * Math.sin(elapsed + d.phase))})`;
+      ctx.fillRect(d.x + sway, d.y, d.size, d.size);
+    }
+
+    // Red's shadow (ground shadow)
     if (bigPhillyLoaded) {
-      const maxW = TILE_SIZE * 1.5;
-      const maxH = TILE_SIZE * 1.5;
+      const maxW = TILE_SIZE * 2;
+      const maxH = TILE_SIZE * 2;
       const scale = Math.min(maxW / bigPhillyImage.width, maxH / bigPhillyImage.height);
       const dw = bigPhillyImage.width * scale;
       const dh = bigPhillyImage.height * scale;
-      ctx.drawImage(bigPhillyImage, 0, 0, bigPhillyImage.width, bigPhillyImage.height, 640 - dw / 2, 380 - dh / 2, dw, dh);
+      const redX = 640 - dw / 2;
+      const redY = 380 - dh / 2;
+
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+      ctx.beginPath();
+      ctx.ellipse(640, 380 + dh * 0.35, dw * 0.55, dh * 0.15, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.shadowColor = "rgba(255, 200, 140, 0.35)";
+      ctx.shadowBlur = 35;
+      ctx.drawImage(bigPhillyImage, 0, 0, bigPhillyImage.width, bigPhillyImage.height, redX, redY, dw, dh);
+      ctx.restore();
+
+      // "Red" nameplate above character
+      ctx.save();
+      ctx.font = "600 13px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(30, 22, 18, 0.85)";
+      ctx.fillRect(640 - 36, redY - 22, 72, 20);
+      ctx.strokeStyle = "rgba(255, 200, 140, 0.5)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(640 - 36, redY - 22, 72, 20);
+      ctx.fillStyle = "rgba(255, 235, 200, 0.95)";
+      ctx.fillText("Red", 640, redY - 8);
+      ctx.restore();
     }
 
     drawPlayer();
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-    ctx.font = "14px system-ui";
+    // Cinematic vignette (darker edges, pulls focus to center)
+    const vignette = ctx.createRadialGradient(w / 2, h * 0.42, h * 0.1, w / 2, h / 2, h * 1.0);
+    vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
+    vignette.addColorStop(0.4, "rgba(0, 0, 0, 0.15)");
+    vignette.addColorStop(0.7, "rgba(0, 0, 0, 0.45)");
+    vignette.addColorStop(1, "rgba(0, 0, 0, 0.7)");
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, w, h);
+
+    // Subtle warm haze overlay (prison yard golden hour)
+    const haze = ctx.createLinearGradient(0, 0, 0, h);
+    haze.addColorStop(0, "rgba(80, 60, 40, 0.06)");
+    haze.addColorStop(0.6, "rgba(120, 90, 60, 0.04)");
+    haze.addColorStop(1, "rgba(60, 45, 30, 0.08)");
+    ctx.fillStyle = haze;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = "rgba(255, 240, 210, 0.92)";
+    ctx.font = "600 14px system-ui";
     ctx.textAlign = "center";
-    ctx.fillText("Walk to Red to continue", w / 2, h - 8);
+    ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+    ctx.shadowBlur = 4;
+    ctx.fillText("Walk to Red to continue", w / 2, h - 12);
+    ctx.shadowBlur = 0;
   }
 
   window.Scenes = window.Scenes || {};

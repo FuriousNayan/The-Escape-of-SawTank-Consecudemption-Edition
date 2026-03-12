@@ -181,6 +181,12 @@ canvas#gameCanvas {
   transform: none;
 }
 
+/* Waketech logo - show whole image, no cropping */
+.dialogue-portrait[data-portrait="waketech"] img {
+  object-fit: contain;
+  transform: none;
+}
+
 /* Brooks - light blue tint */
 .dialogue-portrait[data-portrait="brooks"] {
   position: relative;
@@ -313,5 +319,48 @@ canvas#gameCanvas {
   font-size: 0.9rem;
   opacity: 0.7;
   font-style: italic;
+}
+
+/* ===== Scene 4: Andy Meets Red - cinematic dialogue styling ===== */
+body[data-scene="scene4"] .dialogue-box {
+  background: linear-gradient(to top, rgba(18, 14, 22, 0.98), rgba(12, 10, 16, 0.96));
+  border-top: 2px solid rgba(200, 140, 100, 0.35);
+  box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 220, 180, 0.08);
+}
+
+body[data-scene="scene4"] .dialogue-portrait {
+  border-color: rgba(200, 150, 110, 0.5);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+body[data-scene="scene4"] .dialogue-speaker[data-speaker="red"] {
+  color: #d4a574;
+  border-color: rgba(200, 150, 110, 0.45);
+  background: rgba(40, 25, 15, 0.6);
+}
+
+body[data-scene="scene4"] .dialogue-text {
+  border-color: rgba(180, 140, 100, 0.35);
+  background: rgba(20, 15, 12, 0.4);
+  color: #f0e6dc;
+}
+
+body[data-scene="scene4"].dialogue-active .game-shell::after {
+  background: rgba(15, 12, 18, 0.5);
+}
+
+/* Softer VCR overlay during scene4 */
+body[data-scene="scene4"] .vcr-overlay {
+  opacity: 0.7;
+}
+
+/* ===== Global polish - canvas frame ===== */
+canvas#gameCanvas {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+/* Dialogue entrance animation refinement */
+.dialogue-box.visible {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
 }
 

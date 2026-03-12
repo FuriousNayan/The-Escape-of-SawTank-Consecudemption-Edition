@@ -92,9 +92,9 @@
 
     if (window.Dialogue) {
       const script = [
-        { speaker: "Hadley", text: "You believe that sorry bastard? Inheritance. Uncle Sam wants his cut. I swear, the government will take half.", portrait: "chrisotfer" },
+        { speaker: "Captain Hadley", text: "You believe that sorry guy? Inheritance. Uncle Sam wants his cut. I swear, the government will take half.", portrait: "karim" },
         { speaker: "Saw-Tank", text: "I could set up a one-time transfer for you. Keep most of it. Would cost you a crate of beer for the work crew.", portrait: "sawTank_face" },
-        { speaker: "Hadley", text: "Beer? You want beer?", portrait: "chrisotfer" },
+        { speaker: "Captain Hadley", text: "Beer? You want beer?", portrait: "karim" },
         { speaker: "Saw-Tank", text: "Three apiece. For my coworkers. It'd only be fair.", portrait: "sawTank_face" },
         { speaker: "Red", text: "And that's how it came to pass. We sat and drank with the sun on our shoulders and felt like free men.", portrait: "bigphilly", thought: true },
       ];

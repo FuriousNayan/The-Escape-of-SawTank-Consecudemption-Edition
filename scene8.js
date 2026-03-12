@@ -79,7 +79,7 @@
       const script = [
         { speaker: "Tommy", text: "I knew a guy. Elmo Blatch. Bragged about it in another joint. Said he killed a banker's wife and some guy took the fall.", portrait: "heywood" },
         { speaker: "Saw-Tank", text: "That was me. I'm that guy.", portrait: "sawTank_face" },
-        { speaker: "Warden", text: "Norton. I'm very disappointed. I thought you trusted me.", portrait: "chrisotfer" },
+        { speaker: "Warden", text: "Norton. I'm very disappointed. I thought you trusted me.", portrait: "waketech" },
         { speaker: "Red", text: "Tommy was found shot. The warden called it a suicide. That was when Saw Tank knew. He would never get out through the system.", portrait: "bigphilly", thought: true },
       ];
       requestAnimationFrame(() => window.Dialogue.start(script));

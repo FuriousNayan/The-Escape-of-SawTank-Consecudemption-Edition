@@ -78,7 +78,7 @@
     if (window.Dialogue) {
       const script = [
         { speaker: "Red", text: "Bogs and the Sisters. They had it in for Saw Tank from day one.", portrait: "bigphilly", thought: true },
-        { speaker: "Hadley", text: "Who did this to you? Give me their names.", portrait: "chrisotfer" },
+        { speaker: "Captain Hadley", text: "Who did this to you? Give me their names.", portrait: "karim" },
         { speaker: "Saw-Tank", text: "I don't know.", portrait: "sawTank_face" },
         { speaker: "Red", text: "Saw Tank spent a month in the hole. When he came out, Bogs couldn't walk. Hadley made sure of that.", portrait: "bigphilly", thought: true },
       ];
