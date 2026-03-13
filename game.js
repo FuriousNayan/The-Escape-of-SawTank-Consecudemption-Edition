@@ -80,6 +80,18 @@
     requestAnimationFrame(loop);
   }
 
+  // --- Background music (plays lightly throughout) ---
+  const bgMusic = new Audio("sounds/shawshanktheme.mp3");
+  bgMusic.loop = true;
+  bgMusic.volume = 0.15;
+  function startMusic() {
+    bgMusic.play().catch(() => {});
+    window.removeEventListener("keydown", startMusic);
+    window.removeEventListener("click", startMusic);
+  }
+  window.addEventListener("keydown", startMusic);
+  window.addEventListener("click", startMusic);
+
   // Start with play screen; ensure scenes are loaded first
   goToScene("play");
   requestAnimationFrame(loop);

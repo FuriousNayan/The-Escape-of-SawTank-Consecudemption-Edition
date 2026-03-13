@@ -68,7 +68,7 @@
     floorImage.onload = () => (floorLoaded = true);
 
     brooksImage = new Image();
-    brooksImage.src = "images/brooks.png";
+    brooksImage.src = "images/zingbah.png";
     brooksImage.onload = () => (brooksLoaded = true);
 
     const keyHandler = (e, down) => {
@@ -82,9 +82,9 @@
 
     if (window.Dialogue) {
       const script = [
-        { speaker: "Brooks", text: "I've been here fifty years. Fifty years! The world went and got itself in a big hurry.", portrait: "brooks" },
-        { speaker: "Brooks", text: "The parole board got me into this halfway house. And a job bagging groceries. I can't sleep. The bed's too soft.", portrait: "brooks" },
-        { speaker: "Red", text: "Brooks Hatlen was here. So was Red. He was institutionalized.", portrait: "bigphilly", thought: true },
+        { speaker: "Zingy Zingy Zingybah", text: "I've been here fifty years. Fifty years! The world went and got itself in a big hurry.", portrait: "zingbah" },
+        { speaker: "Zingy Zingy Zingybah", text: "The parole board got me into this halfway house. And a job bagging groceries. I can't sleep. The bed's too soft.", portrait: "zingbah" },
+        { speaker: "The Big Collins", text: "Zingy Zingy Zingybah was here. So was The Big Collins. He was institutionalized.", portrait: "bigphilly", thought: true },
       ];
       requestAnimationFrame(() => window.Dialogue.start(script));
     }

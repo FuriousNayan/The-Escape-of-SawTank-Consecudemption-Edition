@@ -78,8 +78,16 @@
     for (const [px, py] of PATH) {
       room[py][px] = (px === 18 && py === 1) ? TILES.EXIT : TILES.FLOOR;
     }
+    const breakableObstacles = [
+      { x: 12, y: 6, progress: 0, holdTime: 1.0, broken: false },
+      { x: 16, y: 3, progress: 0, holdTime: 1.3, broken: false },
+    ];
+    for (const obstacle of breakableObstacles) {
+      room[obstacle.y][obstacle.x] = TILES.WALL;
+    }
 
     const statusEl = document.getElementById("statusText");
+    let hudText = "Blocked path ahead. Move close to bars and hold E.";
 
     // --- Player ----------------------------------------------------------------
     const player = {
@@ -100,7 +108,7 @@
     let lastTrailY = player.y;
 
     // --- Input -----------------------------------------------------------------
-    const input = { up: false, down: false, left: false, right: false };
+    const input = { up: false, down: false, left: false, right: false, interact: false };
     const KEY_MAP = {
       ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
       w: "up", s: "down", a: "left", d: "right",
@@ -108,6 +116,11 @@
     };
 
     const keyHandler = (e, down) => {
+      if (e.key === "e" || e.key === "E") {
+        input.interact = down;
+        e.preventDefault();
+        return;
+      }
       const action = KEY_MAP[e.key];
       if (!action) return;
       input[action] = down;
@@ -138,9 +151,70 @@
 
     let escaped = false;
 
+    function obstacleCenter(obstacle) {
+      return {
+        x: (obstacle.x + 0.5) * TILE_SIZE,
+        y: (obstacle.y + 0.5) * TILE_SIZE,
+      };
+    }
+
+    function getNearbyObstacle() {
+      let nearest = null;
+      let bestDist = Infinity;
+      for (const obstacle of breakableObstacles) {
+        if (obstacle.broken) continue;
+        const center = obstacleCenter(obstacle);
+        const dist = Math.hypot(player.x - center.x, player.y - center.y);
+        if (dist < bestDist && dist <= TILE_SIZE * 1.5) {
+          bestDist = dist;
+          nearest = obstacle;
+        }
+      }
+      return nearest;
+    }
+
+    let activeObstacle = null;
+
+    function updateObstacleBreak(dt) {
+      const nearby = getNearbyObstacle();
+      activeObstacle = null;
+      for (const obstacle of breakableObstacles) {
+        if (obstacle.broken) continue;
+        if (obstacle !== nearby || !input.interact) {
+          obstacle.progress = Math.max(0, obstacle.progress - dt * 0.8);
+          continue;
+        }
+        obstacle.progress += dt;
+        activeObstacle = obstacle;
+        if (obstacle.progress >= obstacle.holdTime) {
+          obstacle.broken = true;
+          obstacle.progress = obstacle.holdTime;
+          room[obstacle.y][obstacle.x] = TILES.FLOOR;
+          activeObstacle = null;
+          if (window.Dialogue) {
+            window.Dialogue.start([
+              { speaker: "Saw-Tank", text: "That should do it. Keep moving.", portrait: "sawTank_face" },
+            ]);
+          }
+        }
+      }
+      const remaining = breakableObstacles.filter((o) => !o.broken).length;
+      if (remaining === 0) {
+        hudText = "Path is clear. Reach the glowing exit tile.";
+      } else if (nearby && input.interact) {
+        const pct = Math.round((nearby.progress / nearby.holdTime) * 100);
+        hudText = `Breaking bars... ${pct}%   [${remaining} left]`;
+      } else if (nearby) {
+        hudText = `Near obstacle -- hold E to break   [${remaining} left]`;
+      } else {
+        hudText = `Blocked path ahead. Move close to bars and hold E.   [${remaining} left]`;
+      }
+    }
+
     function stepPlayer(dt) {
       if (escaped) return;
       if (window.Dialogue?.visible?.()) return;
+      updateObstacleBreak(dt);
       let moveForward = 0;
       let rotateDir = 0;
       if (input.up) moveForward += 1;
@@ -149,44 +223,45 @@
       if (input.right) rotateDir += 1;
       player.isMoving = moveForward !== 0;
       if (rotateDir !== 0) player.angle += rotateDir * PLAYER_ROTATE_SPEED * dt;
-      if (!player.isMoving) return;
-      const distance = PLAYER_SPEED * dt * Math.sign(moveForward);
-      const dx = Math.cos(player.angle) * distance;
-      const dy = Math.sin(player.angle) * distance;
-      const nextX = player.x + dx;
-      const nextY = player.y + dy;
-      const samplePoints = [
-        [nextX, nextY],
-        [nextX + PLAYER_COLLISION_RADIUS, nextY],
-        [nextX - PLAYER_COLLISION_RADIUS, nextY],
-        [nextX, nextY + PLAYER_COLLISION_RADIUS],
-        [nextX, nextY - PLAYER_COLLISION_RADIUS],
-      ];
-      let blocked = false;
-      for (const [sx, sy] of samplePoints) {
-        if (isSolidTile(tileAtPixel(sx, sy))) {
-          blocked = true;
-          break;
+      if (player.isMoving) {
+        const distance = PLAYER_SPEED * dt * Math.sign(moveForward);
+        const dx = Math.cos(player.angle) * distance;
+        const dy = Math.sin(player.angle) * distance;
+        const nextX = player.x + dx;
+        const nextY = player.y + dy;
+        const samplePoints = [
+          [nextX, nextY],
+          [nextX + PLAYER_COLLISION_RADIUS, nextY],
+          [nextX - PLAYER_COLLISION_RADIUS, nextY],
+          [nextX, nextY + PLAYER_COLLISION_RADIUS],
+          [nextX, nextY - PLAYER_COLLISION_RADIUS],
+        ];
+        let blocked = false;
+        for (const [sx, sy] of samplePoints) {
+          if (isSolidTile(tileAtPixel(sx, sy))) {
+            blocked = true;
+            break;
+          }
         }
-      }
-      if (!blocked) {
-        player.x = nextX;
-        player.y = nextY;
-        const dist = Math.hypot(player.x - lastTrailX, player.y - lastTrailY);
-        if (dist >= TRAIL_MARK_INTERVAL) {
-          const perpX = -Math.sin(player.angle);
-          const perpY = Math.cos(player.angle);
-          const offset = 10;
-          const now = performance.now();
-          trailMarks.push({ x: player.x + perpX * offset, y: player.y + perpY * offset, angle: player.angle, t: now });
-          trailMarks.push({ x: player.x - perpX * offset, y: player.y - perpY * offset, angle: player.angle, t: now });
-          lastTrailX = player.x;
-          lastTrailY = player.y;
+        if (!blocked) {
+          player.x = nextX;
+          player.y = nextY;
+          const dist = Math.hypot(player.x - lastTrailX, player.y - lastTrailY);
+          if (dist >= TRAIL_MARK_INTERVAL) {
+            const perpX = -Math.sin(player.angle);
+            const perpY = Math.cos(player.angle);
+            const offset = 10;
+            const now = performance.now();
+            trailMarks.push({ x: player.x + perpX * offset, y: player.y + perpY * offset, angle: player.angle, t: now });
+            trailMarks.push({ x: player.x - perpX * offset, y: player.y - perpY * offset, angle: player.angle, t: now });
+            lastTrailX = player.x;
+            lastTrailY = player.y;
+          }
         }
       }
       if (!escaped && reachedExit()) {
         escaped = true;
-        if (statusEl) statusEl.textContent = "You escaped this block. Nice work, SawTank.";
+        hudText = "You escaped this block. Nice work, SawTank.";
         if (window.goToScene) setTimeout(() => window.goToScene("scene4"), 800);
       }
     }
@@ -263,6 +338,67 @@
       }
     }
 
+    function drawBreakableObstacleHints() {
+      for (const obstacle of breakableObstacles) {
+        if (obstacle.broken) continue;
+        const px = obstacle.x * TILE_SIZE;
+        const py = obstacle.y * TILE_SIZE;
+        const pulse = 0.25 + 0.15 * Math.sin(performance.now() * 0.008 + obstacle.x);
+        ctx.save();
+        ctx.strokeStyle = `rgba(255, 150, 90, ${0.55 + pulse})`;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px + 5, py + 5, TILE_SIZE - 10, TILE_SIZE - 10);
+        ctx.fillStyle = "rgba(255, 130, 80, 0.18)";
+        ctx.fillRect(px + 6, py + 6, TILE_SIZE - 12, TILE_SIZE - 12);
+        const ratio = Math.max(0, Math.min(1, obstacle.progress / obstacle.holdTime));
+        if (ratio > 0) {
+          ctx.fillStyle = "rgba(255, 230, 170, 0.95)";
+          ctx.fillRect(px + 8, py + TILE_SIZE - 10, (TILE_SIZE - 16) * ratio, 4);
+        }
+        ctx.restore();
+      }
+    }
+
+    function drawHUD() {
+      const W = canvas.width;
+      ctx.save();
+
+      // Top banner with objective/status
+      const bannerW = Math.min(560, W - 28);
+      ctx.fillStyle = "rgba(5, 8, 12, 0.65)";
+      ctx.fillRect(14, 10, bannerW, 32);
+      ctx.strokeStyle = "rgba(255, 200, 140, 0.35)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(14, 10, bannerW, 32);
+      ctx.fillStyle = "rgba(240, 230, 210, 0.95)";
+      ctx.font = "600 13px system-ui";
+      ctx.textAlign = "left";
+      ctx.fillText(hudText, 24, 31);
+
+      // Progress bar above player when actively breaking
+      if (activeObstacle) {
+        const ratio = Math.max(0, Math.min(1, activeObstacle.progress / activeObstacle.holdTime));
+        const barW = 60;
+        const barH = 8;
+        const bx = player.x - barW / 2;
+        const by = player.y - 38;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+        ctx.fillStyle = ratio < 0.5 ? "rgba(255, 170, 80, 0.9)" : "rgba(120, 255, 120, 0.9)";
+        ctx.fillRect(bx, by, barW * ratio, barH);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(bx, by, barW, barH);
+        const pct = Math.round(ratio * 100);
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 10px system-ui";
+        ctx.textAlign = "center";
+        ctx.fillText(`${pct}%`, player.x, by - 3);
+      }
+
+      ctx.restore();
+    }
+
     function drawBigPhilly() {
       if (!bigPhillyLoaded) return;
       const maxW = TILE_SIZE * 1.2;
@@ -319,6 +455,8 @@
       drawTrailMarks,
       drawFloor,
       drawWallsAndExit,
+      drawBreakableObstacleHints,
+      drawHUD,
       drawBigPhilly,
       drawHeywood,
       drawFloyd,
@@ -326,23 +464,23 @@
       canvas,
       ctx,
     };
-    if (statusEl) statusEl.textContent = "Find the glowing exit tile.";
+    if (statusEl) statusEl.textContent = "Blocked path ahead. Move close to bars and hold E.";
     if (window.Dialogue) {
       const script = [
-        { speaker: "Floyd", text: "Takin' bets today, Red?", portrait: "Mr-Gardner" },
-        { speaker: "Red", text: "Smokes or coins, bettor's choice.", portrait: "bigphilly" },
-        { speaker: "Floyd", text: "Smokes. Put me down for two. That little sack o' boohshi, eighth from the front. He'll be first.", portrait: "Mr-Gardner" },
-        { speaker: "Red", text: "All right, who's your horse?", portrait: "bigphilly" },
-        { speaker: "Heywood", text: "Aw, boohshi. I'll call that action. You out some smokes, son, let me tell you!", portrait: "heywood" },
-        { speaker: "Floyd", text: "Well, Heywood, you so smart, you call it!", portrait: "Mr-Gardner" },
-        { speaker: "Heywood", text: "I'll take the chubby fat-bah there. Fifth from the front. Put me down for a quarter deck.", portrait: "heywood" },
-        { speaker: "Red", text: "I had my money on Saw Tank. A tall drink of water, born with a silver spoon.", portrait: "bigphilly", thought: true },
-        { speaker: "Red", text: "I didn't think much of Saw the first time I laid eyes on him. Looked like a stiff breeze would blow him over.", portrait: "bigphilly", thought: true },
-        { speaker: "Red", text: "The first night's the toughest, no doubt about it. When those bars slam home, that's when you know it's for real.", portrait: "bigphilly", thought: true },
-        { speaker: "Red", text: "A whole life blown away in the blink of an eye. I remember my first night. Seems like a long time ago.", portrait: "bigphilly", thought: true },
+        { speaker: "Participation Master", text: "Takin' bets today, Big Collins?", portrait: "Mr-Gardner" },
+        { speaker: "The Big Collins", text: "Smokes or coins, bettor's choice.", portrait: "bigphilly" },
+        { speaker: "Participation Master", text: "Smokes. Put me down for two. That little sack o' boohshi, eighth from the front. He'll be first.", portrait: "Mr-Gardner" },
+        { speaker: "The Big Collins", text: "All right, who's your horse?", portrait: "bigphilly" },
+        { speaker: "Mr Boohbah", text: "Aw, boohshi. I'll call that action. You out some smokes, son, let me tell you!", portrait: "heywood" },
+        { speaker: "Participation Master", text: "Well, Mr Boohbah, you so smart, you call it!", portrait: "Mr-Gardner" },
+        { speaker: "Mr Boohbah", text: "I'll take the chubby fat-bah there. Fifth from the front. Put me down for a quarter deck.", portrait: "heywood" },
+        { speaker: "The Big Collins", text: "I had my money on Saw Tank. A tall drink of water, born with a silver spoon.", portrait: "bigphilly", thought: true },
+        { speaker: "The Big Collins", text: "I didn't think much of Saw the first time I laid eyes on him. Looked like a stiff breeze would blow him over.", portrait: "bigphilly", thought: true },
+        { speaker: "The Big Collins", text: "The first night's the toughest, no doubt about it. When those bars slam home, that's when you know it's for real.", portrait: "bigphilly", thought: true },
+        { speaker: "The Big Collins", text: "A whole life blown away in the blink of an eye. I remember my first night. Seems like a long time ago.", portrait: "bigphilly", thought: true },
       ];
       window.Dialogue.start(script, {
-        onComplete: () => { if (statusEl) statusEl.textContent = "Find the exit."; },
+        onComplete: () => { hudText = "Blocked path ahead. Move close to bars and hold E."; },
       });
     }
   }
@@ -367,7 +505,9 @@
     impl.drawHeywood();
     impl.drawFloyd();
     impl.drawWallsAndExit();
+    impl.drawBreakableObstacleHints();
     impl.drawPlayer();
+    impl.drawHUD();
   }
 
   window.Scenes = window.Scenes || {};

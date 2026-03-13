@@ -187,14 +187,14 @@ canvas#gameCanvas {
   transform: none;
 }
 
-/* Brooks - light blue tint */
-.dialogue-portrait[data-portrait="brooks"] {
+/* Brooks (zingbah) - light blue tint */
+.dialogue-portrait[data-portrait="zingbah"] {
   position: relative;
 }
-.dialogue-portrait[data-portrait="brooks"] img {
+.dialogue-portrait[data-portrait="zingbah"] img {
   filter: sepia(0.1) saturate(0.9) hue-rotate(195deg) brightness(1.05);
 }
-.dialogue-portrait[data-portrait="brooks"]::after {
+.dialogue-portrait[data-portrait="zingbah"]::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -202,14 +202,17 @@ canvas#gameCanvas {
   mix-blend-mode: overlay;
   pointer-events: none;
 }
-.dialogue-speaker[data-speaker="brooks"] {
+.dialogue-speaker[data-speaker="zingy zingy zingybah"] {
   color: #7dd3fc;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
 }
 
 /* Name bar underneath diamond */
 .dialogue-speaker {
   min-width: 95px;
-  max-width: 180px;
+  max-width: 240px;
   padding: 8px 12px;
   font-weight: 700;
   font-size: clamp(0.75rem, 2vw, 0.95rem);
@@ -229,7 +232,7 @@ canvas#gameCanvas {
   line-height: 1.2;
 }
 
-.dialogue-speaker[data-speaker="floyd"] {
+.dialogue-speaker[data-speaker="participation master"] {
   color: #ffffff;
 }
 
@@ -333,7 +336,7 @@ body[data-scene="scene4"] .dialogue-portrait {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-body[data-scene="scene4"] .dialogue-speaker[data-speaker="red"] {
+body[data-scene="scene4"] .dialogue-speaker[data-speaker="the big collins"] {
   color: #d4a574;
   border-color: rgba(200, 150, 110, 0.45);
   background: rgba(40, 25, 15, 0.6);

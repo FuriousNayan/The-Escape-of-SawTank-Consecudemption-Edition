@@ -79,9 +79,9 @@
 
     if (window.Dialogue) {
       const script = [
-        { speaker: "Red", text: "I found it. Buried under a black volcanic rock. A letter. And money.", portrait: "bigphilly", thought: true },
+        { speaker: "The Big Collins", text: "I found it. Buried under a black volcanic rock. A letter. And money.", portrait: "bigphilly", thought: true },
         { speaker: "Andy", text: "If you've made it this far, you're willing to come a little further. Get busy living or get busy dying. I'll be waiting.", portrait: "sawTank_face" },
-        { speaker: "Red", text: "I hope. I hope to see my friend and shake his hand. I hope the Pacific is as blue as it has been in my dreams. I hope.", portrait: "bigphilly", thought: true },
+        { speaker: "The Big Collins", text: "I hope. I hope to see my friend and shake his hand. I hope the Pacific is as blue as it has been in my dreams. I hope.", portrait: "bigphilly", thought: true },
       ];
       requestAnimationFrame(() => window.Dialogue.start(script));
     }
@@ -117,21 +117,21 @@
     if (inAndyZone() && !plotTwistTriggered) {
       plotTwistTriggered = true;
       if (window.Dialogue && window.goToScene) {
-        const arrestScript = [
-          { speaker: "Saw-Tank", text: "Red. I need to tell you something. I'm not who you think I am.", portrait: "sawTank_face" },
-          { speaker: "Saw-Tank", text: "I've been undercover this whole time. Shawshank, the escape, this beach — all of it. I'm a cop.", portrait: "sawTank_face" },
-          { speaker: "Red", text: "What? No...", portrait: "bigphilly" },
-          { speaker: "Saw-Tank", text: "You're under arrest. You have the right to remain silent. Anything you say can and will be used against you.", portrait: "sawTank_face" },
-          { speaker: "Red", text: "You... you set me up. All of it.", portrait: "bigphilly", thought: true },
-          { speaker: "Saw-Tank", text: "Get busy living or get busy dying. You chose. I'm sorry.", portrait: "sawTank_face" },
+        const twistScript = [
+          { speaker: "The Big Collins", text: "You know, I've been watching you this whole time. Every move. Every step.", portrait: "bigphilly" },
+          { speaker: "Saw-Tank", text: "What are you talking about, Big Collins?", portrait: "sawTank_face" },
+          { speaker: "The Big Collins", text: "You think you escaped? You think any of this is real? Zihuatanejo, the beach, the ocean...", portrait: "bigphilly" },
+          { speaker: "The Big Collins", text: "This was never your story. It was mine. And I decide how it ends.", portrait: "bigphilly" },
+          { speaker: "Saw-Tank", text: "Big Collins... no...", portrait: "sawTank_face" },
+          { speaker: "The Big Collins", text: "Get busy living or get busy dying. You chose dying. Now go back to the beginning.", portrait: "bigphilly" },
         ];
         requestAnimationFrame(() => {
           window.Dialogue.hide();
-          window.Dialogue.start(arrestScript, {
+          window.Dialogue.start(twistScript, {
             force: true,
             onComplete: () => {
               window.Dialogue.start(
-                [{ speaker: "Saw-Tank", text: "You need to start over again.", portrait: "sawTank_face" }],
+                [{ speaker: "The Big Collins", text: "See you around, Saw Tank. Again. And again. And again.", portrait: "bigphilly" }],
                 { force: true }
               );
               setTimeout(() => window.goToScene("scene1"), 1200);

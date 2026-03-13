@@ -27,25 +27,25 @@
 
   const TYPEWRITER_SPEED = 40;
 
-  /** Phil audio: play phil_full whenever Red (Big Philly) speaks. */
+  /** Phil audio: play phil_full whenever The Big Collins speaks. */
   const philFullAudio = new Audio("sounds/phil_full.mp3");
 
-  /** Boohbah theme: play whenever Heywood speaks. */
+  /** Boohbah theme: play whenever Mr Boohbah speaks. */
   const boohbahAudio = new Audio("sounds/boohbah.mp3");
 
-  /** Returns true if the current speaker is Red (Big Philly). */
+  /** Returns true if the current speaker is The Big Collins. */
   function isRedSpeaking(speaker, portrait) {
     const s = String(speaker || "").toLowerCase();
-    if (s === "red") return true;
+    if (s === "the big collins") return true;
     if (!portrait) return false;
     const p = String(portrait).toLowerCase();
     return p === "bigphilly" || p === "images/bigphilly.png";
   }
 
-  /** Returns true if the current speaker is Heywood. */
+  /** Returns true if the current speaker is Mr Boohbah. */
   function isHeywoodSpeaking(speaker, portrait) {
     const s = String(speaker || "").toLowerCase();
-    if (s === "heywood") return true;
+    if (s === "mr boohbah") return true;
     if (!portrait) return false;
     const p = String(portrait).toLowerCase();
     return p === "heywood" || p === "images/heywood.png";

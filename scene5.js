@@ -30,12 +30,21 @@
     isMoving: false,
   };
 
-  const input = { up: false, down: false, left: false, right: false };
+  const input = { up: false, down: false, left: false, right: false, interact: false };
   const KEY_MAP = {
     ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
     w: "up", s: "down", a: "left", d: "right",
     W: "up", S: "down", A: "left", D: "right",
   };
+
+  const TAR_RADIUS = 28;
+  const TAR_PROXIMITY = 55;
+  const tarSpots = [
+    { x: 300, y: 380, holdTime: 1.2, progress: 0, done: false },
+    { x: 500, y: 340, holdTime: 1.0, progress: 0, done: false },
+    { x: 650, y: 400, holdTime: 1.5, progress: 0, done: false },
+  ];
+  let activeTarIndex = -1;
 
   const EXIT_LEFT = 780;
   const EXIT_RIGHT = 920;
@@ -55,7 +64,9 @@
     player.frame = 0;
     player.frameTimer = 0;
     player.isMoving = false;
-    input.up = input.down = input.left = input.right = false;
+    input.up = input.down = input.left = input.right = input.interact = false;
+    tarSpots.forEach(s => { s.progress = 0; s.done = false; });
+    activeTarIndex = -1;
 
     tankImage = new Image();
     tankImage.src = "images/SawTank-Sheet-export.png";
@@ -82,6 +93,11 @@
     floydImage.onload = () => (floydLoaded = true);
 
     const keyHandler = (e, down) => {
+      if (e.key === "e" || e.key === "E") {
+        input.interact = down;
+        e.preventDefault();
+        return;
+      }
       const action = KEY_MAP[e.key];
       if (!action) return;
       input[action] = down;
@@ -92,11 +108,11 @@
 
     if (window.Dialogue) {
       const script = [
-        { speaker: "Captain Hadley", text: "You believe that sorry guy? Inheritance. Uncle Sam wants his cut. I swear, the government will take half.", portrait: "karim" },
+        { speaker: "Captain Karimie", text: "You believe that sorry guy? Inheritance. Uncle Sam wants his cut. I swear, the government will take half.", portrait: "karim" },
         { speaker: "Saw-Tank", text: "I could set up a one-time transfer for you. Keep most of it. Would cost you a crate of beer for the work crew.", portrait: "sawTank_face" },
-        { speaker: "Captain Hadley", text: "Beer? You want beer?", portrait: "karim" },
+        { speaker: "Captain Karimie", text: "Beer? You want beer?", portrait: "karim" },
         { speaker: "Saw-Tank", text: "Three apiece. For my coworkers. It'd only be fair.", portrait: "sawTank_face" },
-        { speaker: "Red", text: "And that's how it came to pass. We sat and drank with the sun on our shoulders and felt like free men.", portrait: "bigphilly", thought: true },
+        { speaker: "The Big Collins", text: "And that's how it came to pass. We sat and drank with the sun on our shoulders and felt like free men.", portrait: "bigphilly", thought: true },
       ];
       requestAnimationFrame(() => window.Dialogue.start(script));
     }
@@ -129,7 +145,24 @@
       player.y = Math.max(280, Math.min(H - 60, player.y));
     }
 
-    if (inExitZone()) window.goToScene("scene6");
+    activeTarIndex = -1;
+    for (let i = 0; i < tarSpots.length; i++) {
+      const s = tarSpots[i];
+      if (s.done) continue;
+      const dx = player.x - s.x;
+      const dy = player.y - s.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < TAR_PROXIMITY && input.interact) {
+        s.progress = Math.min(s.progress + dt, s.holdTime);
+        activeTarIndex = i;
+        if (s.progress >= s.holdTime) s.done = true;
+      } else {
+        s.progress = Math.max(0, s.progress - dt * 0.5);
+      }
+    }
+
+    const allTarred = tarSpots.every(s => s.done);
+    if (allTarred && inExitZone()) window.goToScene("scene6");
 
     player.frameTimer += dt;
     if (player.frameTimer >= FRAME_DURATION) {
@@ -241,9 +274,9 @@
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
     ctx.font = "10px Georgia";
     ctx.textAlign = "center";
-    ctx.fillText("Red", 70, 165);
-    ctx.fillText("Heywood", 130, 160);
-    ctx.fillText("Floyd", 190, 163);
+    ctx.fillText("The Big Collins", 70, 165);
+    ctx.fillText("Mr Boohbah", 130, 160);
+    ctx.fillText("P. Master", 190, 163);
 
     ctx.fillStyle = "rgba(60, 45, 30, 0.95)";
     ctx.fillRect(EXIT_LEFT - 20, EXIT_TOP - 20, EXIT_RIGHT - EXIT_LEFT + 40, EXIT_BOTTOM - EXIT_TOP + 40);
@@ -257,12 +290,115 @@
     ctx.font = "11px Georgia";
     ctx.fillText("DOWN", (EXIT_LEFT + EXIT_RIGHT) / 2, (EXIT_TOP + EXIT_BOTTOM) / 2 + 12);
 
+    drawTarSpots();
     drawPlayer();
+    drawHUD();
+  }
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-    ctx.font = "14px system-ui";
+  function drawTarSpots() {
+    const pulse = 0.5 + 0.5 * Math.sin(elapsed * 4);
+    for (let i = 0; i < tarSpots.length; i++) {
+      const s = tarSpots[i];
+      ctx.save();
+      if (s.done) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, TAR_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = "#1a1a1a";
+        ctx.fill();
+        ctx.strokeStyle = "#444";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.strokeStyle = "#4caf50";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(s.x - 10, s.y);
+        ctx.lineTo(s.x - 2, s.y + 9);
+        ctx.lineTo(s.x + 12, s.y - 8);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, TAR_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(30, 20, 10, 0.5)";
+        ctx.fill();
+        const orangeAlpha = 0.4 + 0.6 * pulse;
+        ctx.strokeStyle = `rgba(255, 160, 40, ${orangeAlpha})`;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        if (s.progress > 0) {
+          const pct = s.progress / s.holdTime;
+          const barW = TAR_RADIUS * 1.6;
+          const barH = 6;
+          const bx = s.x - barW / 2;
+          const by = s.y - barH / 2;
+          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+          ctx.fillStyle = "#ff9800";
+          ctx.fillRect(bx, by, barW * pct, barH);
+        }
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawHUD() {
+    const doneCount = tarSpots.filter(s => s.done).length;
+    const allTarred = doneCount === tarSpots.length;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+    ctx.fillRect(0, 0, canvas.width, 34);
+
+    ctx.font = "bold 15px system-ui";
     ctx.textAlign = "center";
-    ctx.fillText("Walk to the ladder to continue", w / 2, h - 8);
+    ctx.textBaseline = "middle";
+
+    if (allTarred) {
+      ctx.fillStyle = "#8bc34a";
+      ctx.fillText("Job's done! Walk to the ladder.", canvas.width / 2, 17);
+    } else {
+      ctx.fillStyle = "#ffc107";
+      ctx.fillText(`Tar the roof: ${doneCount}/3 spots done`, canvas.width / 2, 17);
+    }
+
+    if (activeTarIndex >= 0) {
+      const s = tarSpots[activeTarIndex];
+      const pct = Math.min(1, s.progress / s.holdTime);
+      const pctText = Math.floor(pct * 100);
+
+      ctx.font = "13px system-ui";
+      ctx.fillStyle = "#ffcc80";
+      ctx.textAlign = "center";
+      ctx.fillText(`Tarring... ${pctText}%`, canvas.width / 2, 50);
+
+      const barW = 50;
+      const barH = 6;
+      const bx = player.x - barW / 2;
+      const by = player.y - 38;
+      ctx.fillStyle = "rgba(0,0,0,0.7)";
+      ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+      ctx.fillStyle = "#ff9800";
+      ctx.fillRect(bx, by, barW * pct, barH);
+      ctx.strokeStyle = "rgba(255,255,255,0.3)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(bx - 1, by - 1, barW + 2, barH + 2);
+    }
+
+    if (!allTarred) {
+      for (const s of tarSpots) {
+        if (s.done) continue;
+        const dx = player.x - s.x;
+        const dy = player.y - s.y;
+        if (Math.sqrt(dx * dx + dy * dy) < TAR_PROXIMITY && !input.interact) {
+          ctx.font = "12px system-ui";
+          ctx.fillStyle = "rgba(255,255,255,0.75)";
+          ctx.textAlign = "center";
+          ctx.fillText("[E] Hold to tar", s.x, s.y + TAR_RADIUS + 16);
+          break;
+        }
+      }
+    }
+    ctx.restore();
   }
 
   window.Scenes = window.Scenes || {};

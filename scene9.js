@@ -1,6 +1,6 @@
 /**
  * Scene 9 - Andy's Escape
- * Walk to the sewer pipe to make your escape.
+ * Hold E to push through 3 pipe blockages along the sewer pipe.
  */
 (function () {
   let canvas, ctx;
@@ -28,12 +28,20 @@
     isMoving: false,
   };
 
-  const input = { up: false, down: false, left: false, right: false };
+  const input = { up: false, down: false, left: false, right: false, interact: false };
   const KEY_MAP = {
     ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
     w: "up", s: "down", a: "left", d: "right",
     W: "up", S: "down", A: "left", D: "right",
   };
+
+  const blockages = [
+    { x: 300, y: 380, holdTime: 1.0, progress: 0, broken: false },
+    { x: 500, y: 400, holdTime: 1.3, progress: 0, broken: false },
+    { x: 700, y: 370, holdTime: 1.6, progress: 0, broken: false },
+  ];
+
+  let pushing = false;
 
   const EXIT_LEFT = 750;
   const EXIT_RIGHT = 900;
@@ -54,6 +62,10 @@
     player.frameTimer = 0;
     player.isMoving = false;
     input.up = input.down = input.left = input.right = false;
+    input.interact = false;
+
+    blockages.forEach(function (b) { b.progress = 0; b.broken = false; });
+    pushing = false;
 
     tankImage = new Image();
     tankImage.src = "images/SawTank-Sheet-export.png";
@@ -72,6 +84,11 @@
     barsImage.onload = () => (barsLoaded = true);
 
     const keyHandler = (e, down) => {
+      if (e.key === "e" || e.key === "E") {
+        input.interact = down;
+        e.preventDefault();
+        return;
+      }
       const action = KEY_MAP[e.key];
       if (!action) return;
       input[action] = down;
@@ -82,9 +99,9 @@
 
     if (window.Dialogue) {
       const script = [
-        { speaker: "Red", text: "The night Andy escaped, there was a storm. Lightning, thunder, rain. Perfect cover.", portrait: "bigphilly", thought: true },
-        { speaker: "Red", text: "Six hundred yards of sewer pipe. Crawling through filth no man should have to crawl through. Andy did it.", portrait: "bigphilly", thought: true },
-        { speaker: "Red", text: "When he came out the other end, he stood in the river and let the rain wash him clean. Free.", portrait: "bigphilly", thought: true },
+        { speaker: "The Big Collins", text: "The night Andy escaped, there was a storm. Lightning, thunder, rain. Perfect cover.", portrait: "bigphilly", thought: true },
+        { speaker: "The Big Collins", text: "Six hundred yards of sewer pipe. Crawling through filth no man should have to crawl through. Andy did it.", portrait: "bigphilly", thought: true },
+        { speaker: "The Big Collins", text: "When he came out the other end, he stood in the river and let the rain wash him clean. Free.", portrait: "bigphilly", thought: true },
       ];
       requestAnimationFrame(() => window.Dialogue.start(script));
     }
@@ -93,6 +110,10 @@
   function inExitZone() {
     return player.x >= EXIT_LEFT && player.x <= EXIT_RIGHT &&
            player.y >= EXIT_TOP && player.y <= EXIT_BOTTOM;
+  }
+
+  function allBlockagesBroken() {
+    return blockages.every(function (b) { return b.broken; });
   }
 
   function update(dt) {
@@ -117,7 +138,25 @@
       player.y = Math.max(200, Math.min(H - 60, player.y));
     }
 
-    if (inExitZone()) window.goToScene("scene10");
+    pushing = false;
+    for (const b of blockages) {
+      if (b.broken) continue;
+      const dx = player.x - b.x;
+      const dy = player.y - b.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 60 && input.interact) {
+        b.progress += dt;
+        pushing = true;
+        if (b.progress >= b.holdTime) {
+          b.broken = true;
+          b.progress = b.holdTime;
+        }
+      } else if (!b.broken) {
+        b.progress = Math.max(0, b.progress - dt * 0.5);
+      }
+    }
+
+    if (allBlockagesBroken() && inExitZone()) window.goToScene("scene9b");
 
     player.frameTimer += dt;
     if (player.frameTimer >= FRAME_DURATION) {
@@ -139,6 +178,97 @@
     const pivotBack = dw * 0.25;
     ctx.drawImage(tankImage, frameIndex * frameWidth, 0, frameWidth, tankImage.height, -dw / 2 + pivotBack, -dh / 2, dw, dh);
     ctx.restore();
+  }
+
+  function drawBlockages() {
+    for (const b of blockages) {
+      ctx.save();
+      if (b.broken) {
+        ctx.fillStyle = "#1a1a1a";
+        ctx.fillRect(b.x - 20, b.y - 16, 40, 32);
+        ctx.strokeStyle = "#5c4033";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(b.x - 20, b.y - 16, 40, 32);
+        ctx.fillStyle = "rgba(100, 200, 100, 0.5)";
+        ctx.font = "10px system-ui";
+        ctx.textAlign = "center";
+        ctx.fillText("OPEN", b.x, b.y + 4);
+      } else {
+        const pulse = 0.5 + 0.5 * Math.sin(elapsed * 5);
+        ctx.fillStyle = "#2a1a0a";
+        ctx.fillRect(b.x - 20, b.y - 16, 40, 32);
+        ctx.strokeStyle = "rgba(255, 140, 0, " + (0.5 + pulse * 0.5) + ")";
+        ctx.lineWidth = 2 + pulse;
+        ctx.strokeRect(b.x - 20, b.y - 16, 40, 32);
+
+        const barW = 40;
+        const barH = 5;
+        const barX = b.x - barW / 2;
+        const barY = b.y + 20;
+        const pct = b.progress / b.holdTime;
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(barX, barY, barW, barH);
+        ctx.fillStyle = pct > 0.7 ? "#66ff66" : "#ff8c00";
+        ctx.fillRect(barX, barY, barW * pct, barH);
+        ctx.strokeStyle = "#666";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barW, barH);
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawHUD() {
+    const broken = blockages.filter(function (b) { return b.broken; }).length;
+    const all = allBlockagesBroken();
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(W / 2 - 180, 6, 360, 30);
+    ctx.fillStyle = all ? "#66ff66" : "#ff8c00";
+    ctx.font = "bold 15px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      all ? "Pipe is clear! Crawl to freedom." : "Clear the pipe: " + broken + "/3 blockages",
+      W / 2, 26
+    );
+    ctx.restore();
+
+    if (!all) {
+      for (const b of blockages) {
+        if (b.broken) continue;
+        const dx = player.x - b.x;
+        const dy = player.y - b.y;
+        if (Math.sqrt(dx * dx + dy * dy) < 60) {
+          if (pushing) {
+            const barW = 60;
+            const barH = 8;
+            const barX = player.x - barW / 2;
+            const barY = player.y - 48;
+            const pct = b.progress / b.holdTime;
+            ctx.save();
+            ctx.fillStyle = "rgba(0,0,0,0.65)";
+            ctx.fillRect(barX - 2, barY - 2, barW + 4, barH + 4);
+            ctx.fillStyle = pct > 0.7 ? "#66ff66" : "#ff8c00";
+            ctx.fillRect(barX, barY, barW * pct, barH);
+            ctx.strokeStyle = "#aaa";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(barX, barY, barW, barH);
+            ctx.restore();
+          } else {
+            ctx.save();
+            ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+            ctx.fillRect(player.x - 90, player.y - 50, 180, 24);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "13px system-ui";
+            ctx.textAlign = "center";
+            ctx.fillText("Hold E to push through", player.x, player.y - 33);
+            ctx.restore();
+          }
+          break;
+        }
+      }
+    }
   }
 
   function render() {
@@ -186,12 +316,9 @@
     ctx.textAlign = "center";
     ctx.fillText("PIPE", (EXIT_LEFT + EXIT_RIGHT) / 2, EXIT_TOP - 25);
 
+    drawBlockages();
     drawPlayer();
-
-    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-    ctx.font = "14px system-ui";
-    ctx.textAlign = "center";
-    ctx.fillText("Walk to the pipe to escape", w / 2, h - 8);
+    drawHUD();
   }
 
   window.Scenes = window.Scenes || {};
