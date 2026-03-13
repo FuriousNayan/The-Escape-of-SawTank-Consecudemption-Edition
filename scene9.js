@@ -99,8 +99,8 @@
 
     if (window.Dialogue) {
       const script = [
-        { speaker: "The Big Collins", text: "The night Andy escaped, there was a storm. Lightning, thunder, rain. Perfect cover.", portrait: "bigphilly", thought: true },
-        { speaker: "The Big Collins", text: "Six hundred yards of sewer pipe. Crawling through filth no man should have to crawl through. Andy did it.", portrait: "bigphilly", thought: true },
+        { speaker: "The Big Collins", text: "The night Saw Tank escaped, there was a storm. Lightning, thunder, rain. Perfect cover.", portrait: "bigphilly", thought: true },
+        { speaker: "The Big Collins", text: "Six hundred yards of sewer pipe. Crawling through filth no man should have to crawl through. Saw Tank did it.", portrait: "bigphilly", thought: true },
         { speaker: "The Big Collins", text: "When he came out the other end, he stood in the river and let the rain wash him clean. Free.", portrait: "bigphilly", thought: true },
       ];
       requestAnimationFrame(() => window.Dialogue.start(script));

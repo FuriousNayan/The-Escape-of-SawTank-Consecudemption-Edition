@@ -105,7 +105,7 @@
         { speaker: "The Big Tech", text: "How? HOW?!", portrait: "waketech" },
         { speaker: "The Big Collins", text: "The Big Tech tore that cell apart. Behind the poster... a hole. A tunnel Saw Tank had been digging for twenty years.", portrait: "bigphilly", thought: true },
         { speaker: "The Big Tech", text: "I want him found. Every road, every highway. Find him!", portrait: "waketech" },
-        { speaker: "The Big Collins", text: "The Big Tech never found him. But Saw Tank found The Big Tech. Every dirty dollar, every bribe, every secret. Andy mailed it all.", portrait: "bigphilly", thought: true },
+        { speaker: "The Big Collins", text: "The Big Tech never found him. But Saw Tank found The Big Tech. Every dirty dollar, every bribe, every secret. Saw Tank mailed it all.", portrait: "bigphilly", thought: true },
       ];
       requestAnimationFrame(() => {
         window.Dialogue.start(script, {

@@ -80,7 +80,7 @@
     if (window.Dialogue) {
       const script = [
         { speaker: "The Big Collins", text: "I found it. Buried under a black volcanic rock. A letter. And money.", portrait: "bigphilly", thought: true },
-        { speaker: "Andy", text: "If you've made it this far, you're willing to come a little further. Get busy living or get busy dying. I'll be waiting.", portrait: "sawTank_face" },
+        { speaker: "Saw-Tank", text: "If you've made it this far, you're willing to come a little further. Get busy living or get busy dying. I'll be waiting.", portrait: "sawTank_face" },
         { speaker: "The Big Collins", text: "I hope. I hope to see my friend and shake his hand. I hope the Pacific is as blue as it has been in my dreams. I hope.", portrait: "bigphilly", thought: true },
       ];
       requestAnimationFrame(() => window.Dialogue.start(script));
@@ -207,7 +207,7 @@
     ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
     ctx.font = "14px system-ui";
     ctx.textAlign = "center";
-    ctx.fillText("Walk to Andy to complete the story", w / 2, h - 8);
+    ctx.fillText("Walk to Saw Tank to complete the story", w / 2, h - 8);
   }
 
   window.Scenes = window.Scenes || {};
